@@ -1,2 +1,2 @@
 # ICE-DKFZ
-Repository for the Amuse tool 
+Repository for the AMuSe tool 
