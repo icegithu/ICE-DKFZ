@@ -9,7 +9,6 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 
 # Libraries
 library("tidyverse")
-library("openxlsx")
 
 # Path to the input data
 path <- "C:/DKFZ structure/CKB/"
@@ -36,7 +35,7 @@ Sample_df <- data.frame()
 
 for (x in Sample_plates_raw) {
     
-    # x <- Sample_plates_raw[1]
+    # x <- Sample_plates_raw[2]
     
     temp_Sample_data_info <- read.csv(file = x, header = F)
     head(temp_Sample_data_info)
@@ -48,12 +47,22 @@ for (x in Sample_plates_raw) {
     # find median table
     median_table_start <- which(grepl("median", temp_Sample_data$Sample, ignore.case = T))
     median_table <- temp_Sample_data[(median_table_start+2):(median_table_start+97),]
+    # Remove extra columns if any (some weird machine issues)
+    last_col <- which(colnames(median_table) == "Total Events")
+    median_table <- median_table[,1:last_col]
+    head(median_table)
+    
     # add type
     median_table$Data_Type <- "Median"
     
     # find count table
     count_table_start <- which(grepl("^count$", temp_Sample_data$Sample, ignore.case = T))
     count_table <- temp_Sample_data[(count_table_start+2):(count_table_start+97),]
+    # Remove extra columns if any (some weird machine issues)
+    last_col <- which(colnames(count_table) == "Total Events")
+    count_table <- count_table[,1:last_col]
+    head(count_table)
+    
     # add type
     count_table$Data_Type <- "Count"
     head(count_table, 3)
@@ -67,9 +76,10 @@ for (x in Sample_plates_raw) {
     
     # Put those 2 tables together
     med_count <- rbind(median_table, count_table)
-    med_count$Date <- gsub(" .*", "", gsub("^\\.", "", gsub("[^A-Za-z0-9 ]", ".", temp_Sample_data_info$V2[17])))
+    med_count$Date <- gsub(" .*", "", gsub("^\\.", "", gsub("[^A-Za-z0-9 ]", ".", temp_Sample_data_info$V2[18])))
     med_count$Week <- gsub("Woche", "Week_", str_extract(x, "Woche\\d+"))
     med_count$Delta_T <- delta_temp
+    head(med_count)
     
     # TODO 
     # Probably wont need for "real" data the next line
@@ -81,8 +91,13 @@ for (x in Sample_plates_raw) {
                                       position = Location)
     
     med_count$position <- as.numeric(gsub("\\(.*", "", med_count$position))
+    head(med_count)
+    dim(med_count)
+    colnames(med_count)
     
     Sample_df <- rbind(Sample_df, med_count)
+    dim(Sample_df)
+    colnames(Sample_df)
     
     rownames(Sample_df) <- NULL
 }
