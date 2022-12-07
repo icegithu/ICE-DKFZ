@@ -9,6 +9,7 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 
 # Libraries
 library("tidyverse")
+library("openxlsx")
 
 # Path to the input data
 path <- "C:/DKFZ structure/CKB/"
@@ -199,4 +200,3 @@ dim(Bridge_all)
 # TODO at the moment I select the first date occurance. 
 (filename <- paste("Combined_Output/Bridge_data", unique(Bridge_all$Week), unique(Bridge_all$Date)[1], sep = "_"))
 write_csv(x = Bridge_all, file = paste0(filename,".csv"))
-
