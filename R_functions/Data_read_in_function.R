@@ -12,7 +12,7 @@ library("tidyverse")
 library("openxlsx")
 
 # Path to the input data
-path <- "C:/DKFZ structure/CKB/"
+path <- "C:/DKFZ Project Amuse//CKB/"
 setwd(path)
 
 list.files(recursive = T)
@@ -200,3 +200,4 @@ dim(Bridge_all)
 # TODO at the moment I select the first date occurance. 
 (filename <- paste("Combined_Output/Bridge_data", unique(Bridge_all$Week), unique(Bridge_all$Date)[1], sep = "_"))
 write_csv(x = Bridge_all, file = paste0(filename,".csv"))
+

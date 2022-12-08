@@ -11,7 +11,7 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 library("tidyverse")
 
 # Path to the input data
-path <- "C:/DKFZ structure/CKB/Combined_Output/"
+path <- "C:/DKFZ Project Amuse/CKB/Combined_Output/"
 setwd(path)
 list.files(recursive = T)
 
@@ -32,51 +32,92 @@ sample_data <- sample_data %>%
     mutate(Median = median(c_across(contains("Analyte"))))
 
 # 1) MFI plot =============================================================
+# THis was apparently wrong. they dont care about samples but analytes
 # Mean MFI plot: MFI is median already So it's kind of double averaging. 
-plot_df <- sample_data %>% 
+# plot_df <- sample_data %>% 
+#     filter(Data_type == "Median") %>% 
+#     select(Plate.id, Date, Week, Sample.id, Mean, Median)
+head(bridge_data)
+
+plot_df <-
+    bridge_data %>% 
     filter(Data_type == "Median") %>% 
-    select(Plate.id, Date, Week, Sample.id, Mean, Median)
+    select(Plate.id, Date, Week, Sample.id, contains("Analyte")) %>%
+    pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI") %>%
+    group_by(Plate.id, Date, Analyte) %>% 
+    summarise(Mean_MFI = mean(MFI, na.rm = T),
+              Median_MFI = median(MFI,  na.rm = T))
 head(plot_df)
 
-#TODO For now until we have a better idea lets remove some sample names to fit better
-plot_df <- plot_df %>% filter(!grepl("DEF", Sample.id))
-####
-
 # Lineplot Mean MFI
-ggplot(plot_df, aes(x = Sample.id, y = Mean, color = Date, group = Date)) + 
+p1 <-
+    ggplot(plot_df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
     geom_line(linewidth = 1) +
-    theme_classic() + theme(axis.text.x = element_text(angle = 45)) 
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 # Lineplot Median MFI
-ggplot(plot_df, aes(x = Sample.id, y = Median, color = Date, group = Date)) + 
+p2 <- ggplot(plot_df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
     geom_line(linewidth = 1) +
-    theme_classic() + theme(axis.text.x = element_text(angle = 45)) 
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
 
 # 2) Counts box plots ==========================================================
 # Now keep the counts instaed of median in data type col.
-box_plot_df <- sample_data %>% 
+# box_plot_df <- sample_data %>% 
+#     filter(Data_type == "Count") %>% 
+#     select(Plate.id, Date, Week, Sample.id, Mean, Median)
+
+box_plot_df <-
+    sample_data %>% 
     filter(Data_type == "Count") %>% 
-    select(Plate.id, Date, Week, Sample.id, Mean, Median)
+    select(Plate.id, Date, Week, Sample.id, contains("Analyte")) %>%
+    pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "Count") %>%
+    group_by(Plate.id, Date, Analyte) %>% 
+    summarise(Mean_Counts = mean(Count),
+              Median_Counts = median(Count))
 
-# For now until we have a better idea lets remove some sample names to fit better
-box_plot_df <- box_plot_df %>% filter(!grepl("DEF", Sample.id))
-####
-
+head(box_plot_df)
 # Boxes Mean
-ggplot(box_plot_df, aes(x = Sample.id, y = Mean)) + 
+p3 <- ggplot(box_plot_df, aes(x = Analyte, y = Mean_Counts)) + 
     geom_boxplot() +
     theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
 # Boxes Median
-ggplot(box_plot_df, aes(x = Sample.id, y = Median)) + 
+p4 <- ggplot(box_plot_df, aes(x = Analyte, y = Median_Counts)) + 
     geom_boxplot() +
     theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+cowplot::plot_grid(p3, p4, ncol = 1, align = "hv")
+
+head(bridge_data)
+box_plot_bridge_df <-
+    bridge_data %>% 
+    filter(Data_type == "Count") %>% 
+    select(Plate.id, Date, Week, Sample.id, contains("Analyte")) %>%
+    pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "Count") %>%
+    group_by(Plate.id, Date, Analyte) %>% 
+    summarise(Mean_Counts = mean(Count),
+              Median_Counts = median(Count))
+
+head(box_plot_bridge_df)
+# Boxes Mean
+p5 <- ggplot(box_plot_bridge_df, aes(x = Analyte, y = Mean_Counts)) + 
+    geom_boxplot() +
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+# Boxes Median
+p6 <- ggplot(box_plot_bridge_df, aes(x = Analyte, y = Median_Counts)) + 
+    geom_boxplot() +
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+cowplot::plot_grid(p5, p6, ncol = 1, align = "hv")
 
 # 3) Blank plots ===============================================================
 # Blanks per date ~ MFI 
 blank_data <- sample_data %>% 
     filter(grepl("blank", Sample.id) & Data_type == "Median") %>% 
-    select(Plate.id, Date, contains("Analyte")) %>%
+    select(Plate.id, Date, Sample.id, contains("Analyte")) %>%
     pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI")
 
 head(blank_data, 2)
@@ -99,6 +140,19 @@ ggplot(delta_temp_data, aes(x = Date, y = Delta_t)) +
     geom_point() +
     theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
+# Also for bridging data
+# system's delta temperature per date 
+delta_temp_bridge <- bridge_data %>% 
+    select(Plate.id, Date, Delta_t) 
+# Remove duplicated rows as all plates have the delta temp only once per plate. 
+delta_temp_bridge <- delta_temp_bridge[!duplicated(delta_temp_bridge),]
+head(delta_temp_bridge)
+
+# Delta T point plot
+ggplot(delta_temp_bridge, aes(x = Date, y = Delta_t)) + 
+    geom_point() +
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 # 4) Average per plate
 # X-Axis would be the plates, y-axis the MFI values. One line (color) per analyte. 
 head(sample_data)
@@ -107,11 +161,18 @@ plate_plot_df <- sample_data %>%
     select(Plate.id, Date, contains("Analyte")) %>%
     pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI") %>%
     group_by(Plate.id, Date, Analyte) %>% 
-    summarise(Mean_MFI = mean(MFI))
+    summarise(Mean_MFI = mean(MFI),
+              Median_MFI = median(MFI))
 head(plate_plot_df)
 
 # Lineplot Mean platewise 
-ggplot(plate_plot_df, aes(x = Plate.id, y = Mean_MFI, color = Analyte, group = Analyte)) + 
+p5 <- ggplot(plate_plot_df, aes(x = Plate.id, y = Mean_MFI, color = Analyte, group = Analyte)) + 
     geom_line(linewidth = 1) +
     theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 
+# Lineplot Mean platewise 
+p6 <- ggplot(plate_plot_df, aes(x = Plate.id, y = Median_MFI, color = Analyte, group = Analyte)) + 
+    geom_line(linewidth = 1) +
+    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+cowplot::plot_grid(p5, p6, ncol = 1, align = "hv")
