@@ -16,7 +16,7 @@ library(shinythemes) # for themes
 library(shinyWidgets) # for more input types
 library(tidyverse) # for data wrangling 
 
-SUMMARY_DIR = "./Summary_files"
+SUMMARY_DIR = "./Combined_Output"
 ui <- fluidPage(
   
   theme = shinytheme("readable"),
@@ -60,6 +60,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$create_summaries,{
     # here we call the script to create summaries
+    source("./Read_in_function/Read_in.R")
   })
   
   load_data <- reactive({ 

@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+Combined_Output/*
+CKB/*
+!Combined_Output/.gitkeep 

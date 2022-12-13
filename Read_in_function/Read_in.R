@@ -12,19 +12,18 @@ library("tidyverse")
 library("openxlsx")
 
 # Path to the input data
-path <- "C:/DKFZ structure/CKB/"
-setwd(path)
+WD = './CKB/'
 
 list.files(recursive = T)
 
 # Read in the Sample file - always the same, never updated
 Sample_info_file_loc <- "Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
-Sample_info_file <- read.xlsx(Sample_info_file_loc)
+Sample_info_file <- read.xlsx(paste0(WD,Sample_info_file_loc))
 head(Sample_info_file,3)
 
 # Read in the briding file - always the same, never updated
 Bridge_info_file_loc <- "Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
-Bridge_info_file <- read.xlsx(Bridge_info_file_loc)
+Bridge_info_file <- read.xlsx(paste0(WD,(Bridge_info_file_loc)))
 head(Bridge_info_file)
 
 # Read in Sample plates
