@@ -45,7 +45,8 @@ ui <- fluidPage(
 # Build server ================================================================= 
 server <- function(input, output, session) {
   
-  loaded_summary_files <- reactiveValues()
+  loaded_bridge_files <- reactiveValues()
+  loaded_sample_files <- reactiveValues()
   
   output$select_filesUI <-renderUI({
     # get all files available  
@@ -54,7 +55,7 @@ server <- function(input, output, session) {
     date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d"))
     date_list <- date_list[!is.na(date_list)]
     # show dates as a checkbox
-    checkboxGroupInput("files",
+    checkboxGroupInput("dates",
                  h4("Select summary files to load"),
                  choices = date_list,
                  selected = date_list[1])
@@ -69,10 +70,26 @@ server <- function(input, output, session) {
   })
   
   load_data <- reactive({ 
-    for (i in 1:length(input$files)){
-      myDF <-read.csv(paste0(SUMMARY_DIR,"/",input$files[i]), header = T, stringsAsFactors = F)
+    all_files_list <- list.files(SUMMARY_DIR)
+    Sample_df <- data.frame()
+    Bridge_df <- data.frame()
+    for (i in 1:length(input$dates)){
+      date <- input$dates[i]
+      sample_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Sample")]
+      if(! is_empty(sample_file)){
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T, stringsAsFactors = F)
+        Sample_df <- rbind(Sample_df, myDF)
+      }
+      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridge")]
+      if(! is_empty(bridge_file)){
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T, stringsAsFactors = F)
+        Bridge_df <- rbind(Bridge_df, myDF)
+      }
     }
-    })
+    loaded_bridge_files <- Bridge_df
+    loaded_sample_files <- Sample_df
+    
+  })
   
   
 }
