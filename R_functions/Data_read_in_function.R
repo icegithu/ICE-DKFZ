@@ -65,7 +65,7 @@ for (x in Sample_plates_raw) {
     head(count_table)
     
     # add type
-    count_table$Data_Type <- "Count"
+    count_table$Data_Type <- "Counts"
     head(count_table, 3)
     
     # Find the error log for this plate: 
@@ -128,7 +128,7 @@ for (x in Bridge_plates_raw) {
     # count 
     Bridge_count_start <- which(grepl('^count$', temp_Bridge_df$Sample, ignore.case = T))
     Bridge_count_table <- temp_Bridge_df[(Bridge_count_start+2):(Bridge_count_start+97),]
-    Bridge_count_table$Data_Type <- "Count"
+    Bridge_count_table$Data_Type <- "Counts"
     
     # Find the error log for this plate: 
     bridge_x <- str_extract(x, "\\d\\d\\d\\d\\d\\d")
