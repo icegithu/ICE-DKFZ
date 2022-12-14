@@ -48,11 +48,16 @@ server <- function(input, output, session) {
   loaded_summary_files <- reactiveValues()
   
   output$select_filesUI <-renderUI({
+    # get all files available  
     files_list <- list.files(SUMMARY_DIR)
+    # get dates from those files
+    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d"))
+    date_list <- date_list[!is.na(date_list)]
+    # show dates as a checkbox
     checkboxGroupInput("files",
                  h4("Select summary files to load"),
-                 choices = files_list,
-                 selected = files_list[1])
+                 choices = date_list,
+                 selected = date_list[1])
   })
   
   # When load is pressed it calls the function that updates the reactive container
