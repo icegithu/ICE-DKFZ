@@ -9,6 +9,7 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 
 # Libraries
 library("tidyverse")
+library("cowplot")
 
 # Path to the input data
 path <- "C:/DKFZ Project Amuse/CKB/Combined_Output/"
@@ -23,50 +24,64 @@ head(sample_data)
 bridge_data <- read.csv("Bridge_data_Week_1_20.05.2021.csv")
 head(bridge_data)
 
-# Calculate mean and median per sample (over analytes) and add them to new columns
-sample_data <- sample_data %>% 
-    mutate(Mean = rowMeans(select(sample_data, (contains("Analyte")))))
-
-sample_data <- sample_data %>%
-    rowwise() %>%
-    mutate(Median = median(c_across(contains("Analyte"))))
-
-# 1) MFI plot =============================================================
-# THis was apparently wrong. they dont care about samples but analytes
-# Mean MFI plot: MFI is median already So it's kind of double averaging. 
-# plot_df <- sample_data %>% 
-#     filter(Data_type == "Median") %>% 
-#     select(Plate.id, Date, Week, Sample.id, Mean, Median)
+# Figure 1 – Mean/Median MFI lineplots =========================================
+# Bridging data only + Log/linear toggle
 head(bridge_data)
 
-plot_df <-
-    bridge_data %>% 
-    filter(Data_type == "Median") %>% 
-    select(Plate.id, Date, Week, Sample.id, contains("Analyte")) %>%
-    pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI") %>%
-    group_by(Plate.id, Date, Analyte) %>% 
-    summarise(Mean_MFI = mean(MFI, na.rm = T),
-              Median_MFI = median(MFI,  na.rm = T))
-head(plot_df)
+# get mean and median function. Works on both Sample and Bridging data
+get_mean_median <- function(df){
+    
+    final_df <- 
+        df %>% 
+        select(Plate.id, Date, Sample.id, Data_type, contains("Analyte")) %>%
+        pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "Value") %>%
+        group_by(Plate.id, Date, Analyte, Data_type) %>% 
+        summarise(Mean = mean(Value, na.rm = T),
+                  Median = median(Value,  na.rm = T)) %>% 
+        pivot_wider(names_from = Data_type, values_from = c(Mean, Median))
+    
+    return(final_df)
+    
+}
 
-# Lineplot Mean MFI
-p1 <-
-    ggplot(plot_df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
-    geom_line(linewidth = 1) +
-    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+bridge_df_after <- get_mean_median(bridge_data)
 
-# Lineplot Median MFI
-p2 <- ggplot(plot_df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
-    geom_line(linewidth = 1) +
-    theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+# Draw the lineplots function
+mean_median_lineplots <- function(df){
+    
+    out_list <- list()
+    # Draw median MFI lineplot
+    out_list[["Mean"]] <- ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
+        geom_line(linewidth = 1) +
+        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    
+    # Draw median MFI lineplot
+    out_list[["Median"]] <- ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
+        geom_line(linewidth = 1) +
+        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    
+    return(out_list)
+    
+}
 
-cowplot::plot_grid(p1, p2, ncol = 1, align = "hv")
+Mean_Median_MFI_Plots <- mean_median_lineplots(bridge_df_after)
+do.call(plot_grid, c(Mean_Median_MFI_Plots, ncol = 1, align = "hv"))
 
 # 2) Counts box plots ==========================================================
 # Now keep the counts instaed of median in data type col.
 # box_plot_df <- sample_data %>% 
 #     filter(Data_type == "Count") %>% 
 #     select(Plate.id, Date, Week, Sample.id, Mean, Median)
+# # Calculate mean and median per sample (over analytes) and add them to new columns
+# sample_data <- sample_data %>% 
+#     mutate(Mean = rowMeans(select(sample_data, (contains("Analyte")))))
+# 
+# sample_data <- sample_data %>%
+#     rowwise() %>%
+#     mutate(Median = median(c_across(contains("Analyte"))))
+# 
+
+
 
 box_plot_df <-
     sample_data %>% 
@@ -90,17 +105,14 @@ p4 <- ggplot(box_plot_df, aes(x = Analyte, y = Median_Counts)) +
 
 cowplot::plot_grid(p3, p4, ncol = 1, align = "hv")
 
-head(bridge_data)
-box_plot_bridge_df <-
-    bridge_data %>% 
-    filter(Data_type == "Count") %>% 
-    select(Plate.id, Date, Week, Sample.id, contains("Analyte")) %>%
-    pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "Count") %>%
-    group_by(Plate.id, Date, Analyte) %>% 
-    summarise(Mean_Counts = mean(Count),
-              Median_Counts = median(Count))
-
-head(box_plot_bridge_df)
+!"¤1r13
+3fqwefa"
+231
+aqfr3
+1!!!
+    
+    
+    head(box_plot_bridge_df)
 # Boxes Mean
 p5 <- ggplot(box_plot_bridge_df, aes(x = Analyte, y = Mean_Counts)) + 
     geom_boxplot() +

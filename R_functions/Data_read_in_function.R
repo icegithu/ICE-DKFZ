@@ -54,7 +54,7 @@ for (x in Sample_plates_raw) {
     head(median_table)
     
     # add type
-    median_table$Data_Type <- "Median"
+    median_table$Data_Type <- "MFI"
     
     # find count table
     count_table_start <- which(grepl("^count$", temp_Sample_data$Sample, ignore.case = T))
@@ -123,7 +123,7 @@ for (x in Bridge_plates_raw) {
     # median starts from 1st row
     Bridge_median_start <- which(grepl("median", temp_Bridge_df$Sample, ignore.case = T))
     Bridge_median_df <- temp_Bridge_df[(Bridge_median_start+2):(Bridge_median_start+97),]
-    Bridge_median_df$Data_Type <- "Median"
+    Bridge_median_df$Data_Type <- "MFI"
     
     # count 
     Bridge_count_start <- which(grepl('^count$', temp_Bridge_df$Sample, ignore.case = T))
