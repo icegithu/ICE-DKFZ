@@ -171,7 +171,7 @@ get_mean_median_per_plate <- function(df){
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
 
 # draw the Delta-T point plots function
-delta_t_pointplots <- function(df){
+mm_per_plate_lineplots <- function(df){
     
     out_list <- list()
     
@@ -189,5 +189,5 @@ return(out_list)
 
 }
 
-Sample_MM_per_plate <- delta_t_pointplots(sample_df_mm_per_plate)
+Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate)
 do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))

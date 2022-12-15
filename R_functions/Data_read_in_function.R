@@ -115,10 +115,10 @@ Bridge_df <- data.frame()
 
 for (x in Bridge_plates_raw) {
     
-    # x <- Bridge_plates_raw[1]
+    # x <- Bridge_plates_raw[2]
     
     temp_Bridge_df <- read.csv(x, header = F, skip = 36)   
-    colnames(temp_Bridge_df) <- temp_Bridge_df[3,]
+    colnames(temp_Bridge_df) <- temp_Bridge_df[4,]
     
     # median starts from 1st row
     Bridge_median_start <- which(grepl("median", temp_Bridge_df$Sample, ignore.case = T))
