@@ -11,7 +11,7 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 library("tidyverse")
 library("cowplot")
 
-# Path to the input data
+# Path to the input data for
 path <- "C:/DKFZ Project Amuse/CKB/Combined_Output/"
 setwd(path)
 list.files(recursive = T)

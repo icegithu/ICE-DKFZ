@@ -11,10 +11,9 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 library("tidyverse")
 library("openxlsx")
 
-# Path to the input data
+# Path to the input data for
 path <- "C:/DKFZ Project Amuse//CKB/"
 setwd(path)
-
 list.files(recursive = T)
 
 # Read in the Sample file - always the same, never updated
