@@ -30,7 +30,7 @@ source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 ui <- fluidPage(
   
-  theme = shinytheme("readable"),
+  themeSelector(),
   
   titlePanel("AMuSe"),
 
@@ -134,20 +134,22 @@ server <- function(input, output, session) {
       date <- input$dates[i]
       sample_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Sample")]
       if(! is_empty(sample_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T, stringsAsFactors = F)
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
         Sample_df <- rbind(Sample_df, myDF)
       }
       bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridging")]
       if(! is_empty(bridge_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T, stringsAsFactors = F)
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
         Bridge_df <- rbind(Bridge_df, myDF)
       }
     }
     loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
     loaded_files$Bridge <- Bridge_df
+    loaded_files$Bridge_blanks <- get_blanks(Bridge_df) 
     loaded_files$Sample_mm <- get_mean_median(Sample_df)
     loaded_files$Sample <- Sample_df
     loaded_files$Sample_mm_per_plate <- get_mean_median_per_plate(Sample_df)
+    loaded_files$Sample_blanks <- get_blanks(Sample_df) 
 
   })
 
@@ -170,11 +172,11 @@ server <- function(input, output, session) {
   })
 
   output$Blank_Sample  <- renderPlotly({
-      ggplotly(blank_boxplots(get_blanks(loaded_files$Sample)))
+      ggplotly(blank_boxplots(loaded_files$Sample_blanks))
   })
 
   output$Blank_Bridging  <- renderPlotly({
-      ggplotly(blank_boxplots(get_blanks(loaded_files$Bridge)))
+      ggplotly(blank_boxplots(loaded_files$Bridge_blanks))
   })
 
   output$DeltaT_Bridging  <- renderPlotly({
