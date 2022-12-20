@@ -19,9 +19,12 @@ library(tidyverse) # for data wrangling
 # Set Working directories ======================================================
 
 SUMMARY_DIR = "./Combined_Output"
+RAW_DATA_DIR = "./CKB/Rohdaten"
 FUNCTIONS_DIR = "./R_functions"
+BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
+SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
 
-source(paste0(FUNCTIONS_DIR,"/","Plotting_Functions.R"))
+source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 # Build UI =====================================================================
 
@@ -120,7 +123,13 @@ server <- function(input, output, session) {
 
   observeEvent(input$create_summaries,{
     # here we call the script to create summaries
-    source(paste0(FUNCTIONS_DIR,"/","Data_read_in_function.R"))
+    week_list <- list.files(RAW_DATA_DIR)
+    sample_info <- read.xlsx(SAMPLE_INFO_FILE)
+    bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+    for (i in 1:length(week_list)){
+        read_in_sample_data(paste0(RAW_DATA_DIR,"/",week_list[i]), sample_info)
+        read_in_bridging_data(paste0(RAW_DATA_DIR,"/",week_list[i]), bridge_info)
+    }
   })
 
   load_data <- reactive({
