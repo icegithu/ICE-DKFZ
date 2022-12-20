@@ -36,7 +36,9 @@ ui <- fluidPage(
 
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
-                       uiOutput("select_filesUI"),
+                       checkboxGroupInput("dates",
+                                          h4("Select summary files to load"),
+                                          choices = get_avaliable_dates(SUMMARY_DIR)),
                        actionButton("load_button", "Load"),
                        tags$h5("If your desire summary doesn't appear, click update"),
                        actionButton("create_summaries", "Update"),
@@ -104,20 +106,6 @@ server <- function(input, output, session) {
 
   loaded_files <- reactiveValues()
 
-  # Loading files functions ====
-  output$select_filesUI <-renderUI({
-    # get all files available
-    files_list <- list.files(SUMMARY_DIR)
-    # get dates from those files
-    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d"))
-    date_list <- date_list[!is.na(date_list)]
-    # show dates as a checkbox
-    checkboxGroupInput("dates",
-                 h4("Select summary files to load"),
-                 choices = date_list,
-                 selected = date_list[1])
-  })
-
   # When load is pressed it calls the function that updates the reactive container
   observeEvent(input$load_button, load_data())
 
@@ -130,6 +118,12 @@ server <- function(input, output, session) {
         read_in_sample_data(paste0(RAW_DATA_DIR,"/",week_list[i]), sample_info)
         read_in_bridging_data(paste0(RAW_DATA_DIR,"/",week_list[i]), bridge_info)
     }
+    # get new files after they have been created
+    date_list <- get_avaliable_dates(SUMMARY_DIR)
+    # show dates as a checkbox
+    updateCheckboxGroupInput(session, "dates",
+                       choices = date_list)
+    
   })
 
   load_data <- reactive({
