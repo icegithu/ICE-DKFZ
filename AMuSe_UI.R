@@ -39,24 +39,20 @@ ui <- fluidPage(
                        actionButton("create_summaries", "Update"),
               ),
               tabPanel("MFI Bridging",
+                       tags$h2("Line plots Bridging data"),
                        fluidRow(
-                           tags$h2("Line plots Bridging data"),
+                           column(2, align = "left",
+                                  actionButton("download_MFI_bridge", "Download"),
+                           ),
                            column(2,
                                div(id='my_log', materialSwitch(inputId = "log_linear", value = F,
                                                            status = "danger", label = "Log Scale"))
-                           ),
-                           column(2,
-                                actionButton("download_MFI_bridge", "Download"),
                            )
                        ),
-                       fluidRow(
-                           tags$h3("Mean MFI Bridging data"),
-                           plotlyOutput(outputId = "Mean_MFI_Bridging",width = "100%", height = "700px"),
-                       ),
-                       fluidRow(
+                       tags$h3("Mean MFI Bridging data"),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging",width = "100%", height = "700px"),
                        tags$h3("Median MFI Bridging data"),
                        plotlyOutput(outputId = "Median_MFI_Bridging",width = "100%", height = "700px")
-                       )
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
@@ -85,7 +81,13 @@ ui <- fluidPage(
               ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
-                       actionButton("download_MFI_perplate", "Download"),
+                       fluidRow(
+                           column(2, align="left", actionButton("download_MFI_perplate", "Download")),
+                           column(2, align="right",tags$h3("Display")),
+                           column(4, align="left",
+                              radioButtons("perplate_display","", c("daywise" = "daywise", "weekwise" = "weekwise","per plate" = "platewise"), inline=T)
+                           )
+                       ),
                        tags$h3("Mean MFI"),
                        plotlyOutput(outputId = "Mean_MFI_perplate",width = "100%", height = "700px"),
                        tags$h3("Median MFI"),
