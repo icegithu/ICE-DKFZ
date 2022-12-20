@@ -137,7 +137,7 @@ server <- function(input, output, session) {
         myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T, stringsAsFactors = F)
         Sample_df <- rbind(Sample_df, myDF)
       }
-      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridge")]
+      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridging")]
       if(! is_empty(bridge_file)){
         myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T, stringsAsFactors = F)
         Bridge_df <- rbind(Bridge_df, myDF)
