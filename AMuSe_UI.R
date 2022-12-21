@@ -158,11 +158,13 @@ server <- function(input, output, session) {
 
   # Call_plotting functions ====
   output$Mean_MFI_Bridging  <- renderPlotly({
-      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Mean"]])
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Mean"]])  %>% 
+          layout(legend = list(orientation = "h", y = - 1.5, x=0.25))
   })
 
   output$Median_MFI_Bridging  <- renderPlotly({
-      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Median"]])
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Median"]])%>% 
+          layout(legend = list(orientation = "h", y = - 1.5, x=0.25))
   })
 
   output$Mean_Count_Bridging  <- renderPlotly({
@@ -189,11 +191,13 @@ server <- function(input, output, session) {
   })
 
   output$Mean_MFI_perplate  <- renderPlotly({
-      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Mean"]])
+      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Mean"]])%>% 
+          layout(legend = list(orientation = "h", y = - 1.5, x=0.25))
   })
 
   output$Median_MFI_perplate  <- renderPlotly({
-      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Median"]])
+      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Median"]])%>% 
+          layout(legend = list(orientation = "h", y = - 1.5, x=0.25))
   })
 }
 
