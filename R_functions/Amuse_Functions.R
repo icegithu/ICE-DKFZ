@@ -338,6 +338,7 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis){
 KT3_lineplot <- function(df){
     
     # df <- sample_blanks_kt # debug
+    
     df <- df %>% filter(Sample.id == "KT-3")# %>% 
     # TODO this needs summarising over something at one point when we have more plates    
     # group_by(Plate.id, Date) %>% 
