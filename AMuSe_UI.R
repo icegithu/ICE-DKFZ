@@ -10,66 +10,125 @@ gc() #free up memory and report the memory usage
 library(DT) # to show the dataset
 library(openxlsx) # for opening excel files
 library(plotly) # interactive/live plots
-library(scales) # for additional ggplot functionality 
+library(scales) # for additional ggplot functionality
 library(shiny) # shiny :)
 library(shinythemes) # for themes
 library(shinyWidgets) # for more input types
-library(tidyverse) # for data wrangling 
+library(tidyverse) # for data wrangling
+
+# Set Working directories ======================================================
 
 SUMMARY_DIR = "./Combined_Output"
+RAW_DATA_DIR = "./CKB/Rohdaten"
+FUNCTIONS_DIR = "./R_functions"
+BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
+SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
+
+# Other Global variables ======================================================
+PLOT_HEIGHT = "200px"
+source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
+
+# Build UI =====================================================================
+
 ui <- fluidPage(
   
-  theme = shinytheme("readable"),
+  themeSelector(),
   
   titlePanel("AMuSe"),
-  
-  tabsetPanel(id= "TabPanel",type = "tabs",                
-              # This is the first panel    
-              tabPanel("Load Files", 
-                       uiOutput("select_filesUI"),
+
+  tabsetPanel(id= "TabPanel",type = "tabs",
+              tabPanel("Load Files",
+                       checkboxGroupInput("dates",
+                                          h4("Select summary files to load"),
+                                          choices = get_avaliable_dates(SUMMARY_DIR)),
                        actionButton("load_button", "Load"),
                        tags$h5("If your desire summary doesn't appear, click update"),
                        actionButton("create_summaries", "Update"),
               ),
-              tabPanel("Line plots",
-                       tags$h2("Line plots")),
-              tabPanel("Beadcount",
-                       tags$h2("Beadscount")),
-              tabPanel("Boxplots",
-                       tags$h2("Boxplots")),
-              tabPanel("Others",
-                       tags$h2("Other Plots"))
+              tabPanel("MFI Bridging",
+                       tags$h2("Line plots Bridging data"),
+                       fluidRow(
+                           column(2, align = "left",
+                                  actionButton("download_MFI_bridge", "Download"),
+                           ),
+                           column(2,
+                               div(id='my_log', materialSwitch(inputId = "log_linear", value = F,
+                                                           status = "danger", label = "Log Scale"))
+                           )
+                       ),
+                       tags$h3("Mean MFI Bridging data"),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging", height = PLOT_HEIGHT),
+                       tags$h3("Median MFI Bridging data"),
+                       plotlyOutput(outputId = "Median_MFI_Bridging", height = PLOT_HEIGHT),
+              ),
+              tabPanel("Counts",
+                       tags$h2("Box plots of Sample and Bridging Data"),
+                       actionButton("download_box_count", "Download"),
+                       tags$h3("Mean Count Bridging"),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT),
+                       tags$h3("Mean Count Sample"),
+                       plotlyOutput(outputId = "Mean_Count_Sample", height = PLOT_HEIGHT),
+
+              ),
+              tabPanel("Blank values",
+                       tags$h2("Blank Values"),
+                       actionButton("download_blanck", "Download"),
+                       tags$h3("Sample Data"),
+                       plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT),
+                       tags$h3("Bridging Data"),
+                       plotlyOutput(outputId = "Blank_Bridging", height = PLOT_HEIGHT),
+              ),
+              tabPanel("Temperature",
+                       tags$h2("Temperature delta for Sample and Bridging Data"),
+                       actionButton("download_deltaT", "Download"),
+                       tags$h3("Sample Data"),
+                       plotlyOutput(outputId = "DeltaT_Sample", height = PLOT_HEIGHT),
+                       tags$h3("Bridging Data"),
+                       plotlyOutput(outputId = "DeltaT_Bridging", height = PLOT_HEIGHT),
+              ),
+              tabPanel("MFI Sample",
+                       tags$h2("Line plots for MFI per plate"),
+                       fluidRow(
+                           column(2, align="left", actionButton("download_MFI_perplate", "Download")),
+                           column(2, align="right",tags$h3("Display")),
+                           column(4, align="left",
+                              radioButtons("perplate_display","", c("daywise" = "daywise", "weekwise" = "weekwise","per plate" = "platewise"), inline=T)
+                           )
+                       ),
+                       tags$h3("Mean MFI"),
+                       plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT),
+                       tags$h3("Median MFI"),
+                       plotlyOutput(outputId = "Median_MFI_perplate", height = PLOT_HEIGHT),
+              )
   )
 )
 
-# Build server ================================================================= 
+# Build server =================================================================
 server <- function(input, output, session) {
-  
-  loaded_bridge_files <- reactiveValues()
-  loaded_sample_files <- reactiveValues()
-  
-  output$select_filesUI <-renderUI({
-    # get all files available  
-    files_list <- list.files(SUMMARY_DIR)
-    # get dates from those files
-    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d"))
-    date_list <- date_list[!is.na(date_list)]
-    # show dates as a checkbox
-    checkboxGroupInput("dates",
-                 h4("Select summary files to load"),
-                 choices = date_list,
-                 selected = date_list[1])
-  })
-  
+
+  loaded_files <- reactiveValues()
+
   # When load is pressed it calls the function that updates the reactive container
   observeEvent(input$load_button, load_data())
-  
+
   observeEvent(input$create_summaries,{
     # here we call the script to create summaries
-    source("./Read_in_function/Read_in.R")
+    week_list <- list.files(RAW_DATA_DIR)
+    sample_info <- read.xlsx(SAMPLE_INFO_FILE)
+    bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+    for (i in 1:length(week_list)){
+        read_in_sample_data(paste0(RAW_DATA_DIR,"/",week_list[i]), sample_info)
+        read_in_bridging_data(paste0(RAW_DATA_DIR,"/",week_list[i]), bridge_info)
+    }
+    # get new files after they have been created
+    date_list <- get_avaliable_dates(SUMMARY_DIR)
+    # show dates as a checkbox
+    updateCheckboxGroupInput(session, "dates",
+                       choices = date_list)
+    
   })
-  
-  load_data <- reactive({ 
+
+  load_data <- reactive({
     all_files_list <- list.files(SUMMARY_DIR)
     Sample_df <- data.frame()
     Bridge_df <- data.frame()
@@ -77,21 +136,65 @@ server <- function(input, output, session) {
       date <- input$dates[i]
       sample_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Sample")]
       if(! is_empty(sample_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T, stringsAsFactors = F)
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
         Sample_df <- rbind(Sample_df, myDF)
       }
-      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridge")]
+      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridging")]
       if(! is_empty(bridge_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T, stringsAsFactors = F)
+        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
         Bridge_df <- rbind(Bridge_df, myDF)
       }
     }
-    loaded_bridge_files <- Bridge_df
-    loaded_sample_files <- Sample_df
-    
+    loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
+    loaded_files$Bridge <- Bridge_df
+    loaded_files$Bridge_blanks <- get_blanks(Bridge_df) 
+    loaded_files$Sample_mm <- get_mean_median(Sample_df)
+    loaded_files$Sample <- Sample_df
+    loaded_files$Sample_mm_per_plate <- get_mean_median_per_plate(Sample_df)
+    loaded_files$Sample_blanks <- get_blanks(Sample_df) 
+
   })
-  
-  
+
+
+  # Call_plotting functions ====
+  output$Mean_MFI_Bridging  <- renderPlotly({
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Mean"]])
+  })
+
+  output$Median_MFI_Bridging  <- renderPlotly({
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm)[["Median"]])
+  })
+
+  output$Mean_Count_Bridging  <- renderPlotly({
+      ggplotly(mean_median_boxplots(loaded_files$Bridge_mm)[["Mean"]])
+  })
+
+  output$Mean_Count_Sample  <- renderPlotly({
+      ggplotly(mean_median_boxplots(loaded_files$Sample_mm)[["Mean"]])
+  })
+
+  output$Blank_Sample  <- renderPlotly({
+      ggplotly(blank_boxplots(loaded_files$Sample_blanks))
+  })
+
+  output$Blank_Bridging  <- renderPlotly({
+      ggplotly(blank_boxplots(loaded_files$Bridge_blanks))
+  })
+
+  output$DeltaT_Bridging  <- renderPlotly({
+      ggplotly(delta_t_pointplots(loaded_files$Bridge))
+  })
+  output$DeltaT_Sample  <- renderPlotly({
+      ggplotly(delta_t_pointplots(loaded_files$Sample))
+  })
+
+  output$Mean_MFI_perplate  <- renderPlotly({
+      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Mean"]])
+  })
+
+  output$Median_MFI_perplate  <- renderPlotly({
+      ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate)[["Median"]])
+  })
 }
 
 
