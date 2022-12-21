@@ -8,6 +8,7 @@
 rm(list = ls(all.names = TRUE)) # will clear all objects including hidden objects
 
 # Libraries
+library("ggbeeswarm")
 library("cowplot")
 library("openxlsx")
 library("tidyverse")
@@ -31,16 +32,37 @@ head(Bridge_info_file)
 source('C:/Users/GK/Documents/R_Projects/ICE-DKFZ/R_functions/Amuse_Functions.R')
 
 # update input data
-read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
-read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
+# read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
+# read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
 
 # Read in sample data for plotting
+list.files(paste0(path,"Combined_Output"))
 sample_data <- read.csv(paste0(path,"Combined_Output/Sample_data_Week_1_11.4.2022.csv"))
+sum(is.na(sample_data$Sample.id))
 head(sample_data)
 
 # Read in bridging data for plotting
 bridge_data <- read.csv(paste0("Combined_Output/Bridging_data_Week_1_20.05.2021.csv"))
+bridge_data$Sample.id[is.na(bridge_data$Sample.id)] <- "empty"
 head(bridge_data)
+
+################################################################################
+### THIS IS ONLY UNTIL WE GET NEW GOOD Dummy data
+################################################################################
+# Add KT-3 info (for now) to make those plots later
+bridge_data$Sample.id[bridge_data$Sample.id == "AB_1"] <- "KT-3"
+bridge_data %>% filter(Sample.id == "KT-3")
+sample_data$Sample.id[sample_data$Sample.id == "ABC123"| sample_data$Sample.id == "DEF123"] <- "KT-3"
+sample_data %>% filter(Sample.id == "KT-3")
+# Rename one analyte to GST tag
+colnames(bridge_data)[ncol(bridge_data)] <- "GST_tag"
+bridge_data$GST_tag <- rnorm(n = nrow(bridge_data), mean = 90, sd = 5)
+
+colnames(sample_data)[ncol(sample_data)] <- "GST_tag"
+sample_data$GST_tag <- rnorm(n = nrow(sample_data), mean = 85, sd = 8)
+
+################################################################################
+################################################################################
 
 # Get mean and median dataframes
 bridge_df_mm <- get_mean_median(bridge_data)
@@ -53,30 +75,51 @@ do.call(plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
 
 # Figure 2 – Mean/Median Counts Boxplots =======================================
 # Bridging and Sample data
-Sample_MM_Boxplots <- mean_median_boxplots(sample_df_mm)
-do.call(plot_grid, c(Sample_MM_Boxplots, ncol = 1, align = "hv"))
+Mean_Boxplots <- list()
+Mean_Boxplots[["Sample"]] <- mean_median_boxplots(sample_df_mm) + ggtitle("Sample data")
+Mean_Boxplots[["Bridge"]] <- mean_median_boxplots(bridge_df_mm) + ggtitle("Bridging data")
 
-Bridge_MM_Boxplots <- mean_median_boxplots(bridge_df_mm)
-do.call(plot_grid, c(Bridge_MM_Boxplots, ncol = 1, align = "hv"))
+do.call(plot_grid, c(Mean_Boxplots, ncol = 1, align = "hv"))
 
 # get blank-sample data frames 
-sample_blanks <- get_blanks(sample_data)
-bridge_blanks <- get_blanks(bridge_data)
+sample_blanks_kt <- get_blanks_kt(sample_data)
+
+############### ONLY for dummy data!!!! 
+sample_blanks_kt$MFI[sample_blanks_kt$Plate.id == "jub826" & sample_blanks_kt$Sample.id == "blank"] <- sample(10:20, size = sum(sample_blanks_kt$Plate.id == "jub826" & sample_blanks_kt$Sample.id == "blank"), replace = T)
+################################################################################
+
+bridge_blanks_kt <- get_blanks_kt(bridge_data)
 
 # Figure 3 – Blank MFI Boxplots =================================================
 # Bridging and Sample data
-blank_boxplots(sample_blanks)
-blank_boxplots(bridge_blanks)
+blank_bees(sample_blanks_kt)
+blank_bees(bridge_blanks_kt)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-delta_t_pointplots(sample_data)
-delta_t_pointplots(bridge_data)
+delta_t_pointplot(sample_data = sample_data, bridge_data = bridge_data)
 
 # Get mean median per plate
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
+head(sample_df_mm_per_plate)
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
 # Sample data
-Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate)
+x_axis <- "Plate.id"
+x_axis <- "Date"
+x_axis <- "Week"
+x_axis <- "Plate_daywise"
+
+Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis)
 do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
+
+# Figure 6 – KT-3 dotplots =====================================================
+# Sample and bridging data
+KT3_lineplot(sample_blanks_kt)
+KT3_lineplot(bridge_blanks_kt)
+
+# Figure 7 – GST Beeswarm plot =================================================
+# Sample and bridging data
+
+GST_bees(sample_data)
+GST_bees(bridge_data)
