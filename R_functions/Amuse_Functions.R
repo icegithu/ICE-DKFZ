@@ -259,18 +259,18 @@ blank_bees <- function(df){
 # Bridging and Sample data
 
 # draw the Delta-T point plots function
-delta_t_pointplot <- function(sample_data = df1, bridge_data = df2){
+delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     
     # df1 <- sample_data #debug
     # df2 <- bridge_data #debug
     
     # Subset data
     delta_df1 <- df1 %>% 
-        select(Plate.id, Date, Delta_t) %>% 
+        dplyr::select(Plate.id, Date, Delta_t) %>% 
         distinct()
     # Subset data    
     delta_df2 <- df2 %>% 
-        select(Plate.id, Date, Delta_t) %>% 
+        dplyr::select(Plate.id, Date, Delta_t) %>% 
         distinct()
     
     # Add type

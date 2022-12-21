@@ -15,7 +15,7 @@ library("tidyverse")
 
 # Path to the input data for
 path <- "C:/DKFZ Project Amuse/CKB/"
-setwd(path)
+# setwd(path)
 list.files(recursive = T)
 
 # Read in the Sample file - always the same, never updated
@@ -97,7 +97,7 @@ blank_bees(bridge_blanks_kt)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-delta_t_pointplot(sample_data = sample_data, bridge_data = bridge_data)
+delta_t_pointplot(df1 = sample_data, df2 = bridge_data)
 
 # Get mean median per plate
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
@@ -105,10 +105,10 @@ head(sample_df_mm_per_plate)
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
 # Sample data
-x_axis <- "Plate.id"
 x_axis <- "Date"
 x_axis <- "Week"
 x_axis <- "Plate_daywise"
+x_axis <- "Plate.id"
 
 Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis)
 do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
