@@ -24,6 +24,8 @@ FUNCTIONS_DIR = "./R_functions"
 BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
 SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
 
+# Other Global variables ======================================================
+PLOT_HEIGHT = "200px"
 source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 # Build UI =====================================================================
@@ -55,34 +57,34 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI Bridging data"),
-                       plotlyOutput(outputId = "Mean_MFI_Bridging",width = "100%", height = "700px"),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging", height = PLOT_HEIGHT),
                        tags$h3("Median MFI Bridging data"),
-                       plotlyOutput(outputId = "Median_MFI_Bridging",width = "100%", height = "700px")
+                       plotlyOutput(outputId = "Median_MFI_Bridging", height = PLOT_HEIGHT),
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        actionButton("download_box_count", "Download"),
                        tags$h3("Mean Count Bridging"),
-                       plotlyOutput(outputId = "Mean_Count_Bridging", height = "700px"),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT),
                        tags$h3("Mean Count Sample"),
-                       plotlyOutput(outputId = "Mean_Count_Sample", height = "700px"),
+                       plotlyOutput(outputId = "Mean_Count_Sample", height = PLOT_HEIGHT),
 
               ),
               tabPanel("Blank values",
                        tags$h2("Blank Values"),
                        actionButton("download_blanck", "Download"),
                        tags$h3("Sample Data"),
-                       plotlyOutput(outputId = "Blank_Sample",width = "100%", height = "700px"),
+                       plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT),
                        tags$h3("Bridging Data"),
-                       plotlyOutput(outputId = "Blank_Bridging",width = "100%", height = "700px")
+                       plotlyOutput(outputId = "Blank_Bridging", height = PLOT_HEIGHT),
               ),
               tabPanel("Temperature",
                        tags$h2("Temperature delta for Sample and Bridging Data"),
                        actionButton("download_deltaT", "Download"),
                        tags$h3("Sample Data"),
-                       plotlyOutput(outputId = "DeltaT_Sample",width = "100%", height = "700px"),
+                       plotlyOutput(outputId = "DeltaT_Sample", height = PLOT_HEIGHT),
                        tags$h3("Bridging Data"),
-                       plotlyOutput(outputId = "DeltaT_Bridging",width = "100%", height = "700px")
+                       plotlyOutput(outputId = "DeltaT_Bridging", height = PLOT_HEIGHT),
               ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
@@ -94,9 +96,9 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI"),
-                       plotlyOutput(outputId = "Mean_MFI_perplate",width = "100%", height = "700px"),
+                       plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT),
                        tags$h3("Median MFI"),
-                       plotlyOutput(outputId = "Median_MFI_perplate",width = "100%", height = "700px")
+                       plotlyOutput(outputId = "Median_MFI_perplate", height = PLOT_HEIGHT),
               )
   )
 )
