@@ -7,6 +7,8 @@
 read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_info_file){
     
     Sample_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte", recursive = T)
+    if (length(Sample_plates_raw) == 0){ return()}
+        
     (Sample_plates_raw <- Sample_plates_raw[!grepl(" \\d+ ", Sample_plates_raw)])
     
     Sample_df <- data.frame()
@@ -15,11 +17,11 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         
         # x <- Sample_plates_raw[2]
         
-        temp_Sample_data_info <- read.csv(file = x, header = F)
+        temp_Sample_data_info <- read.csv(file = paste(path_to_file, x, sep="/"), header = F)
         head(temp_Sample_data_info)
         
         # Skip 50 lines to get a correct column detection 
-        temp_Sample_data <- read.csv(file = x, header = F, skip = 51)
+        temp_Sample_data <- read.csv(file = paste(path_to_file, x, sep="/"), header = F, skip = 51)
         colnames(temp_Sample_data) <- temp_Sample_data[2,]
         
         # find median table
@@ -87,7 +89,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     
     # save data
     # TODO at the moment I select the first date occurance. 
-    (filename <- paste0(path_to_file, "Combined_Output/Sample_data_", 
+    (filename <- paste0("./", "Combined_Output/Sample_data_", 
                         unique(Sample_all$Week), "_", unique(Sample_all$Date)[1], ".csv"))
     write_csv(x = Sample_all, file = filename)
     print(paste("Sample data collected and saved under:", filename))
@@ -98,7 +100,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     
     # Read in bridging plates  
     (Bridge_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte \\d+", recursive = T))
-    
+    if (length(Bridge_plates_raw) == 0){ return()}
     # make an empty container
     Bridge_df <- data.frame()
     
@@ -106,7 +108,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
         
         # x <- Bridge_plates_raw[2]
         
-        temp_Bridge_df <- read.csv(x, header = F, skip = 36)   
+        temp_Bridge_df <- read.csv(paste(path_to_file, x, sep="/"), header = F, skip = 36)   
         colnames(temp_Bridge_df) <- temp_Bridge_df[4,]
         
         # median starts from 1st row
@@ -157,7 +159,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     
     # save data
     # TODO at the moment I select the first date occurance. 
-    (filename <- paste0(path_to_file, "Combined_Output/Bridging_data_", 
+    (filename <- paste0("./", "Combined_Output/Bridging_data_", 
                         unique(Bridge_all$Week), "_", unique(Bridge_all$Date)[1], ".csv"))
     write_csv(x = Bridge_all, file = filename)
     print(paste("Bridging data collected and saved under:", filename))
@@ -330,7 +332,6 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis){
     
 }
 
-
 # Figure 6 – KT-3 Lineplots ====================================================
 # TODO Will need a Mean over plate.id/date probably
 
@@ -354,7 +355,6 @@ KT3_lineplot <- function(df){
 }    
 
 # Figure 7 – GST Beeswarm ======================================================
-
 # Draw the GST bees function
 GST_bees <- function(df){
     
@@ -370,3 +370,12 @@ GST_bees <- function(df){
     return(plot)
     
 }    
+
+get_avaliable_dates <- function(summary_dir){
+    # get all files available
+    files_list <- list.files(summary_dir)
+    # get dates from those files
+    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d"))
+    date_list <- date_list[!is.na(date_list)]
+    return(date_list)
+}
