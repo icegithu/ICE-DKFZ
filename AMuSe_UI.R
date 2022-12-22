@@ -40,6 +40,7 @@ ui <- fluidPage(
 
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
+                       dateRangeInput("daterange1", "Date range:"),
                        checkboxGroupInput("dates",
                                           h4("Select summary files to load"),
                                           choices = get_avaliable_dates(SUMMARY_DIR)),
