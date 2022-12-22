@@ -8,7 +8,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     
     Sample_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte", recursive = T)
     if (length(Sample_plates_raw) == 0){ return()}
-        
+    
     (Sample_plates_raw <- Sample_plates_raw[!grepl(" \\d+ ", Sample_plates_raw)])
     
     Sample_df <- data.frame()
@@ -184,22 +184,45 @@ get_mean_median <- function(df){
     
 }
 
+# AESTHETICS ===================================================================
+theme_set(
+    theme_classic() +
+        theme(plot.title = element_text(hjust = 0.5, size = rel(1.5)),
+              axis.text.x = element_text(angle = 45, hjust = 1))
+)
+
+
 # Draw the mean median MFI lineplots
-mean_median_lineplots <- function(df){
+mean_median_lineplots <- function(df, log_toggle){
     
-    # df <- bridge_df_mm ¤debug
+    # df <- bridge_df_mm #debug
+    
     out_list <- list()
     # Draw median MFI lineplot
     out_list[["Mean"]] <-
         ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) + geom_point() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Mean MFI")
     
     # Draw median MFI lineplot
     out_list[["Median"]] <-
         ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) + geom_point() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Median MFI")
+    
+    if (log_toggle) {
+        
+        out_list[["Mean"]] <- out_list[["Mean"]] + 
+            scale_y_log10("Log10(Mean MFI",
+                          breaks = scales::trans_breaks("log10", function(x) 10^x),
+                          labels = scales::trans_format("log10", math_format(10^.x))) +
+            annotation_logticks(sides = "l")
+        
+        
+        out_list[["Median"]] <- out_list[["Median"]] + 
+            scale_y_log10("Log10(Median MFI",
+                          breaks = scales::trans_breaks("log10", function(x) 10^x),
+                          labels = scales::trans_format("log10", math_format(10^.x))) +
+            annotation_logticks(sides = "l")
+    }
     
     return(out_list)
     
@@ -209,15 +232,14 @@ mean_median_lineplots <- function(df){
 # Bridging and Sample data
 
 # Draw the mean median boxplots function
-mean_median_boxplots <- function(df){
+mean_boxplots <- function(df){
     
     # df <- sample_df_mm #debug
     
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_boxplot() + labs(x = "", y = "Mean Counts") 
     
     return(Mean_box_plot)
     
@@ -243,13 +265,13 @@ get_blanks_kt <- function(df){
 # Draw the blank boxplots function
 blank_bees <- function(df){
     
-    # df <- sample_blanks # debug
+    # df <- sample_blanks_kt # debug
     df <- df %>% filter(Sample.id == "blank")
+    df$Plate.id <- as.character(df$Plate.id)
     
     plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = as.character(Plate.id))) + 
-        geom_beeswarm() + labs(color = "Plate.ID") + 
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
+        geom_beeswarm() + labs(color = "Plate.ID", x = "")
     
     return(plot)
     
@@ -281,10 +303,9 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     combo_df <- rbind(delta_df1, delta_df2)
     
     plot <-
-        ggplot(combo_df, aes(x = Date, y = Delta_t, shape = Type, color = Plate.id)) + 
-        geom_point(position = position_dodge(0.3), size = 2) +
-        theme_classic() +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        ggplot(combo_df, aes(x = Date, y = Delta_t, shape = Type, color = Plate.id)) +
+        geom_point(position = position_dodge(0.3), size = 2) + 
+        labs(x = "", y = "Delta T (°C)", shape = "Plate Type", color = "Plate ID")
     
     return(plot)
 }
@@ -319,14 +340,16 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis){
     # Draw Lineplot Mean platewise 
     out_list[["Mean"]] <-
         ggplot(df, aes(x = get(x_axis), y = Mean_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) + xlab(x_axis) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_line(linewidth = 1) + geom_point() + 
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", y = "Mean MFI")
     
     # Draw Lineplot Mean platewise 
     out_list[["Median"]] <-
         ggplot(df, aes(x = get(x_axis), y = Median_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) + xlab(x_axis) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_line(linewidth = 1) + geom_point() + 
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", y = "Median MFI")
     
     return(out_list)
     
@@ -347,8 +370,9 @@ KT3_lineplot <- function(df){
     
     plot <-
         ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
-        geom_line(linewidth = 1) + labs(color = "Analyte") + 
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        geom_line(linewidth = 1) + geom_point() +
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", color = "Analyte") 
     
     return(plot)
     
@@ -361,11 +385,11 @@ GST_bees <- function(df){
     # df <- sample_data # debug
     
     df <- df %>% filter(Data_type == "MFI")
+    df$Plate.id <- as.character(df$Plate.id)
     
     plot <-
-        ggplot(df, aes(x = Date, y = GST_tag, color = as.character(Plate.id))) + 
-        geom_beeswarm(size = 2) + labs(color = "Plate.ID") +   
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+        ggplot(df, aes(x = Date, y = GST_tag, color = Plate.id)) + 
+        geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
     
     return(plot)
     
