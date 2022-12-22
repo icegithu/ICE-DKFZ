@@ -221,7 +221,8 @@ server <- function(input, output, session) {
   })
 
   output$DeltaT_Combined  <- renderPlotly({
-      ggplotly(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))
+      remove_parenthesis_legend(
+          ggplotly(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge)))
   })
 
   output$Mean_MFI_perplate  <- renderPlotly({

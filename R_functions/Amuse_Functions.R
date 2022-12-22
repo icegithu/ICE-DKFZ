@@ -418,4 +418,12 @@ remove_hover_duplicate <- function(p){
     return(p)
 }
 
+remove_parenthesis_legend <- function(p){
+    for (i in 1:length(p[["x"]][["data"]])){
+        name <- p[["x"]][["data"]][[i]][["name"]]
+        p[["x"]][["data"]][[i]][["name"]] <- str_remove_all(str_remove_all(name,"\\("),"\\)")
+    }
+    return(p)
+}
+
 
