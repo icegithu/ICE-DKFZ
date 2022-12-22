@@ -26,7 +26,8 @@ BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
 SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
 
 # Other Global variables ======================================================
-PLOT_HEIGHT = "200px"
+PLOT_HEIGHT = "300px"
+PLOT_WIDTH = "700px"
 source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 # Build UI =====================================================================
@@ -58,32 +59,32 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI Bridging data"),
-                       plotlyOutput(outputId = "Mean_MFI_Bridging", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Median MFI Bridging data"),
-                       plotlyOutput(outputId = "Median_MFI_Bridging", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Median_MFI_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        actionButton("download_box_count", "Download"),
                        tags$h3("Mean Count Bridging"),
-                       plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Mean Count Sample"),
-                       plotlyOutput(outputId = "Mean_Count_Sample", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Mean_Count_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
 
               ),
               tabPanel("Blank values",
                        tags$h2("Blank Values"),
                        actionButton("download_blank", "Download"),
                        tags$h3("Sample Data"),
-                       plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
-                       plotlyOutput(outputId = "Blank_Bridging", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Blank_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
               ),
               tabPanel("Temperature",
                        tags$h2("Temperature delta for Sample and Bridging Data"),
                        actionButton("download_deltaT", "Download"),
                        tags$h3("Combined Data"),
-                       plotlyOutput(outputId = "DeltaT_Combined", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "DeltaT_Combined", height = PLOT_HEIGHT, width = PLOT_WIDTH),
               ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
@@ -95,25 +96,25 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI"),
-                       plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Median MFI"),
-                       plotlyOutput(outputId = "Median_MFI_perplate", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "Median_MFI_perplate", height = PLOT_HEIGHT, width = PLOT_WIDTH),
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
                        actionButton("download_KT3", "Download"),
                        tags$h3("Sample Data"),
-                       plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
-                       plotlyOutput(outputId = "KT3_Bridge", height = PLOT_HEIGHT), 
+                       plotlyOutput(outputId = "KT3_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
               ),
               tabPanel("GST Plot",
                        tags$h2("GST"),
                        actionButton("download_GST", "Download"),
                        tags$h3("Sample Data"),
-                       plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT),
+                       plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
-                       plotlyOutput(outputId = "GST_Bridge", height = PLOT_HEIGHT), 
+                       plotlyOutput(outputId = "GST_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
               ),
               
   )
