@@ -8,7 +8,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     
     Sample_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte", recursive = T)
     if (length(Sample_plates_raw) == 0){ return()}
-        
+    
     (Sample_plates_raw <- Sample_plates_raw[!grepl(" \\d+ ", Sample_plates_raw)])
     
     Sample_df <- data.frame()
@@ -184,19 +184,45 @@ get_mean_median <- function(df){
     
 }
 
+# AESTHETICS ===================================================================
+theme_set(
+    theme_classic() +
+        theme(plot.title = element_text(hjust = 0.5, size = rel(1.5)),
+              axis.text.x = element_text(angle = 45, hjust = 1))
+)
+
+
 # Draw the mean median MFI lineplots
-mean_median_lineplots <- function(df){
+mean_median_lineplots <- function(df, log_toggle){
+    
+    # df <- bridge_df_mm #debug
     
     out_list <- list()
     # Draw median MFI lineplot
-    out_list[["Mean"]] <- ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    out_list[["Mean"]] <-
+        ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
+        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Mean MFI")
     
     # Draw median MFI lineplot
-    out_list[["Median"]] <- ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    out_list[["Median"]] <-
+        ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
+        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Median MFI")
+    
+    if (log_toggle) {
+        
+        out_list[["Mean"]] <- out_list[["Mean"]] + 
+            scale_y_log10("Log10(Mean MFI",
+                          breaks = scales::trans_breaks("log10", function(x) 10^x),
+                          labels = scales::trans_format("log10", math_format(10^.x))) +
+            annotation_logticks(sides = "l")
+        
+        
+        out_list[["Median"]] <- out_list[["Median"]] + 
+            scale_y_log10("Log10(Median MFI",
+                          breaks = scales::trans_breaks("log10", function(x) 10^x),
+                          labels = scales::trans_format("log10", math_format(10^.x))) +
+            annotation_logticks(sides = "l")
+    }
     
     return(out_list)
     
@@ -206,32 +232,29 @@ mean_median_lineplots <- function(df){
 # Bridging and Sample data
 
 # Draw the mean median boxplots function
-mean_median_boxplots <- function(df){
+mean_boxplots <- function(df){
     
-    out_list <- list()
+    # df <- sample_df_mm #debug
     
     # Draw Mean Boxes
-    out_list[["Mean"]] <- ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    Mean_box_plot <-
+        ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
+        geom_boxplot() + labs(x = "", y = "Mean Counts") 
     
-    # Draw Median Boxes
-    out_list[["Median"]] <- ggplot(df, aes(x = Analyte, y = Median_Counts)) + 
-        geom_boxplot() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-    
-    return(out_list)
+    return(Mean_box_plot)
     
 }
 
 # Figure 3 – Blank MFI Boxplots =================================================
 # Bridging and Sample data
 
-# get mean and median function. Works on both Sample and Bridging data
-get_blanks <- function(df){
+# get blank and KT-3 samples only. Works on both Sample and Bridging data
+get_blanks_kt <- function(df){
+    
+    # df <- sample_data # debug
     
     final_df <- 
-        df %>% filter(grepl("blank", Sample.id) & Data_type == "MFI") %>% 
+        df %>% filter(grepl("blank|KT-3", Sample.id) & Data_type == "MFI") %>% 
         select(Plate.id, Date, Sample.id, contains("Analyte")) %>%
         pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI")
     
@@ -240,11 +263,15 @@ get_blanks <- function(df){
 }
 
 # Draw the blank boxplots function
-blank_boxplots <- function(df){
+blank_bees <- function(df){
     
-    plot <- ggplot(df, aes(x = Date, y = MFI)) + 
-        geom_boxplot() +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    # df <- sample_blanks_kt # debug
+    df <- df %>% filter(Sample.id == "blank")
+    df$Plate.id <- as.character(df$Plate.id)
+    
+    plot <-
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
+        geom_beeswarm() + labs(color = "Plate.ID", x = "")
     
     return(plot)
     
@@ -254,30 +281,48 @@ blank_boxplots <- function(df){
 # Bridging and Sample data
 
 # draw the Delta-T point plots function
-delta_t_pointplots <- function(df){
+delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     
-    delta_df <- df %>% 
-        select(Plate.id, Date, Delta_t) %>% 
+    # df1 <- sample_data #debug
+    # df2 <- bridge_data #debug
+    
+    # Subset data
+    delta_df1 <- df1 %>% 
+        dplyr::select(Plate.id, Date, Delta_t) %>% 
+        distinct()
+    # Subset data    
+    delta_df2 <- df2 %>% 
+        dplyr::select(Plate.id, Date, Delta_t) %>% 
         distinct()
     
-    plot <- ggplot(delta_df, aes(x = Date, y = Delta_t)) + 
-        geom_point(position = position_dodge(0.3)) +
-        theme_classic() + 
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    # Add type
+    delta_df1$Type <- "Sample Plates"
+    delta_df2$Type <- "Bridging Plate"
+    
+    # Combine
+    combo_df <- rbind(delta_df1, delta_df2)
+    
+    plot <-
+        ggplot(combo_df, aes(x = Date, y = Delta_t, shape = Type, color = Plate.id)) +
+        geom_point(position = position_dodge(0.3), size = 2) + 
+        labs(x = "", y = "Delta T (°C)", shape = "Plate Type", color = "Plate ID")
     
     return(plot)
 }
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
-
 # get mean and median per plate function.
+
 get_mean_median_per_plate <- function(df){
+    
+    # df <- sample_data #debug
+    # head(df)
     
     final_df <- df %>% 
         filter(Data_type == "MFI") %>% 
-        select(Plate.id, Date, contains("Analyte")) %>%
+        select(Plate.id, Date, Week, Plate_daywise, contains("Analyte")) %>%
         pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI") %>%
-        group_by(Plate.id, Date, Analyte) %>% 
+        group_by(Plate.id, Date, Week, Plate_daywise, Analyte) %>% 
         summarise(Mean_MFI = mean(MFI),
                   Median_MFI = median(MFI))
     
@@ -286,23 +331,69 @@ get_mean_median_per_plate <- function(df){
 }
 
 # draw the Delta-T point plots function
-mm_per_plate_lineplots <- function(df){
+mm_per_plate_lineplots <- function(df, x_axis = x_axis){
+    
+    # df <- sample_df_mm_per_plate # Debug
     
     out_list <- list()
     
     # Draw Lineplot Mean platewise 
-    out_list[["Mean"]] <- ggplot(df, aes(x = Plate.id, y = Mean_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    out_list[["Mean"]] <-
+        ggplot(df, aes(x = get(x_axis), y = Mean_MFI, color = Analyte, group = Analyte)) + 
+        geom_line(linewidth = 1) + geom_point() + 
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", y = "Mean MFI")
     
     # Draw Lineplot Mean platewise 
-    out_list[["Median"]] <- ggplot(df, aes(x = Plate.id, y = Median_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) +
-        theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+    out_list[["Median"]] <-
+        ggplot(df, aes(x = get(x_axis), y = Median_MFI, color = Analyte, group = Analyte)) + 
+        geom_line(linewidth = 1) + geom_point() + 
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", y = "Median MFI")
     
     return(out_list)
     
 }
+
+# Figure 6 – KT-3 Lineplots ====================================================
+# TODO Will need a Mean over plate.id/date probably
+
+# Draw the KT-3 pointplots function
+KT3_lineplot <- function(df){
+    
+    # df <- sample_blanks_kt # debug
+    
+    df <- df %>% filter(Sample.id == "KT-3")# %>% 
+    # TODO this needs summarising over something at one point when we have more plates    
+    # group_by(Plate.id, Date) %>% 
+    # summarise(Mean_MFI = mean(MFI))
+    
+    plot <-
+        ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
+        geom_line(linewidth = 1) + geom_point() +
+        scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+        labs(x = "", color = "Analyte") 
+    
+    return(plot)
+    
+}    
+
+# Figure 7 – GST Beeswarm ======================================================
+# Draw the GST bees function
+GST_bees <- function(df){
+    
+    # df <- sample_data # debug
+    
+    df <- df %>% filter(Data_type == "MFI")
+    df$Plate.id <- as.character(df$Plate.id)
+    
+    plot <-
+        ggplot(df, aes(x = Date, y = GST_tag, color = Plate.id)) + 
+        geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
+    
+    return(plot)
+    
+}    
 
 get_avaliable_dates <- function(summary_dir){
     # get all files available
