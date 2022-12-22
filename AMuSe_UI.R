@@ -194,17 +194,13 @@ server <- function(input, output, session) {
 
   # Call_plotting functions ====
   output$Mean_MFI_Bridging  <- renderPlotly({
-      p <- ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                         input$log_linear)[["Mean"]])
-      if(!input$log_linear){p<- remove_hover_duplicate(p)}
-      p
+      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                         input$log_linear)[["Mean"]]))
   })
 
   output$Median_MFI_Bridging  <- renderPlotly({
-      p <- ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                          input$log_linear)[["Median"]])
-      if(!input$log_linear){p<- remove_hover_duplicate(p)}
-      p
+      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                          input$log_linear)[["Median"]]))
   })
 
   output$Mean_Count_Bridging  <- renderPlotly({

@@ -409,9 +409,10 @@ remove_hover_duplicate <- function(p){
         points_in_line <- p[["x"]][["data"]][[i]][["text"]]
         for (j in 1:length(points_in_line)){
             initial_text <- p[["x"]][["data"]][[i]][["text"]][[j]] 
-            text_as_list <- str_split(initial_text, "<br")[[1]]
-            p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list),collapse = "<br")
-            
+            text_as_list <- str_split(initial_text, "<br")
+            if (length(text_as_list)>0){
+                p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list[[1]]),collapse = "<br")
+            }
         }
     }
     return(p)
