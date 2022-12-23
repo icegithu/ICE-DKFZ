@@ -40,16 +40,17 @@ ui <- fluidPage(
 
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
+                       tags$div(tags$p()),
                        fluidRow(
-                          column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T)),
-                          column(2, airDatepickerInput("daterange", "Select a date range:", range = T))
+                          column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T)),
+                          column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
+                          column(4, align = "left", 
+                                 verbatimTextOutput("files_to_load_text"),
+                                 tags$h5("If your desire summary doesn't appear, click update"),
+                                 actionButton("create_summaries", "Update"),     
+                          ),
                        ),
-                       checkboxGroupInput("dates",
-                                          h4("Select summary files to load"),
-                                          choices = get_avaliable_dates(SUMMARY_DIR)),
                        actionButton("load_button", "Load"),
-                       tags$h5("If your desire summary doesn't appear, click update"),
-                       actionButton("create_summaries", "Update"),
               ),
               tabPanel("MFI Bridging",
                        tags$h2("Line plots Bridging data"),
@@ -69,7 +70,10 @@ ui <- fluidPage(
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
-                       actionButton("download_box_count", "Download"),
+                       fluidRow(
+                           column(2, actionButton("download_box_count", "Download")),
+                           column(2, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
+                       ),
                        tags$h3("Mean Count Bridging"),
                        plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Mean Count Sample"),
@@ -126,11 +130,26 @@ ui <- fluidPage(
 
 # Build server =================================================================
 server <- function(input, output, session) {
-
+    
+  get_dates_to_load <- reactive({
+        date_list <-input$datemultiple
+        monday_list <- cut(as.Date(date_list), "week")
+        monday_list <- factor(format(as.Date(monday_list),"%Y%m%d"))
+        # TODO: this assumes that the available dates are mondays, it might need change
+        avaliable_dates <- get_avaliable_dates(SUMMARY_DIR)
+        date_intersection <- factor(avaliable_dates,levels = levels(monday_list))
+        date_intersection <- date_intersection[!is.na(date_intersection)]
+        dates_to_load$dates <- as.character(date_intersection)
+  })
+  # Reactive containers ====
   loaded_files <- reactiveValues()
+  dates_to_load <- reactiveValues()
 
-  # When load is pressed it calls the function that updates the reactive container
-  observeEvent(input$load_button, load_data())
+  # Button observing functions ====
+  observeEvent(input$load_button, {
+    get_dates_to_load()
+    load_data()
+    })
 
   observeEvent(input$create_summaries,{
     # here we call the script to create summaries
@@ -141,32 +160,40 @@ server <- function(input, output, session) {
         read_in_sample_data(paste0(RAW_DATA_DIR,"/",week_list[i]), sample_info)
         read_in_bridging_data(paste0(RAW_DATA_DIR,"/",week_list[i]), bridge_info)
     }
-    # get new files after they have been created
-    date_list <- get_avaliable_dates(SUMMARY_DIR)
-    # show dates as a checkbox
-    updateCheckboxGroupInput(session, "dates",
-                       choices = date_list)
+    get_dates_to_load()
+    load_data()
     
   })
-
+  
+  output$files_to_load_text <- renderText({ 
+      if (length(dates_to_load$dates)>0){
+          paste0("The following weeks will be loaded:\n",
+                 paste0(
+                 dates_to_load$dates,
+                 collapse = "\n"
+                 ))}
+      else{
+          "No files found"
+      }})
+  
   load_data <- reactive({
     all_files_list <- list.files(SUMMARY_DIR)
     Sample_df <- data.frame()
     Bridge_df <- data.frame()
-    for (i in 1:length(input$dates)){
-      date <- input$dates[i]
-      sample_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Sample")]
+    for (i in 1:length(dates_to_load$dates)){
+      selected_date <- dates_to_load$dates[i]
+      sample_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Sample")]
       if(! is_empty(sample_file)){
         myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
         Sample_df <- rbind(Sample_df, myDF)
       }
-      bridge_file <- all_files_list[str_detect(all_files_list, date) & str_detect(all_files_list,"Bridging")]
+      bridge_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Bridging")]
       if(! is_empty(bridge_file)){
         myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
         Bridge_df <- rbind(Bridge_df, myDF)
       }
     }
-    
+
     ################################################################################
     ### THIS IS ONLY UNTIL WE GET NEW GOOD Dummy data
     ################################################################################

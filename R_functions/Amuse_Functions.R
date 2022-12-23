@@ -399,7 +399,9 @@ get_avaliable_dates <- function(summary_dir){
     # get all files available
     files_list <- list.files(summary_dir)
     # get dates from those files
-    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d"))
+    # date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d")) # old file date format
+    # new date format
+    date_list <- unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d"))
     date_list <- date_list[!is.na(date_list)]
     return(date_list)
 }
