@@ -56,7 +56,7 @@ ui <- fluidPage(
                        tags$h2("Line plots Bridging data"),
                        fluidRow(
                            column(2, align = "left",
-                                  actionButton("download_MFI_bridge", "Download"),
+                                  downloadButton("download_MFI_bridge", "Download"),
                            ),
                            column(2,
                                div(id='my_log', materialSwitch(inputId = "log_linear", value = F,
@@ -149,6 +149,7 @@ server <- function(input, output, session) {
   observeEvent(input$load_button, {
     get_dates_to_load()
     load_data()
+    update_calendar()
     })
 
   observeEvent(input$create_summaries,{
@@ -221,6 +222,18 @@ server <- function(input, output, session) {
     loaded_files$Sample_blanks <- get_blanks_kt(Sample_df) 
 
   })
+  
+  update_calendar <- reactive({
+      highlightedDates  <- as.Date(dates_to_load$dates,format="%Y%m%d")
+      calendar_options <- data.frame(highlightedDates)
+      
+      updateAirDateInput(
+          session = session,
+          input$date_boxplot,
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+  })
 
 
   # Call_plotting functions ====
@@ -228,6 +241,15 @@ server <- function(input, output, session) {
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                          input$log_linear)[["Mean"]]))
   })
+  
+  output$download_MFI_bridge <- downloadHandler(
+      filename = "MFI_bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
+              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,input$log_linear)[["Mean"]]))),file)
+          
+      }
+  )
 
   output$Median_MFI_Bridging  <- renderPlotly({
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
