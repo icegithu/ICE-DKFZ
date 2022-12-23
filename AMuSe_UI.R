@@ -43,7 +43,7 @@ ui <- fluidPage(
                        tags$div(tags$p()),
                        fluidRow(
                           column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T)),
-                          column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
+                          # column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
                           column(4, align = "left", 
                                  verbatimTextOutput("files_to_load_text"),
                                  tags$h5("If your desire summary doesn't appear, click update"),
