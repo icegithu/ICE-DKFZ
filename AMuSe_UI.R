@@ -42,7 +42,7 @@ ui <- fluidPage(
               tabPanel("Load Files",
                        tags$div(tags$p()),
                        fluidRow(
-                          column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T)),
+                          column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1)),
                           # column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
                           column(4, align = "left", 
                                  verbatimTextOutput("files_to_load_text"),
@@ -139,7 +139,7 @@ server <- function(input, output, session) {
         avaliable_dates <- get_avaliable_dates(SUMMARY_DIR)
         date_intersection <- factor(avaliable_dates,levels = levels(monday_list))
         date_intersection <- date_intersection[!is.na(date_intersection)]
-        dates_to_load$dates <- as.character(date_intersection)
+        dates_to_load$dates <- sort(as.character(date_intersection))
   })
   # Reactive containers ====
   loaded_files <- reactiveValues()
