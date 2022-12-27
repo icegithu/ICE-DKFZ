@@ -297,12 +297,15 @@ mean_median_lineplots <- function(df, log_toggle){
 # Bridging and Sample data
 
 # Draw the mean median boxplots function
-mean_boxplots <- function(df){
+mean_boxplots <- function(df, selected_date = ""){
     
     # df <- sample_df_mm #debug
+    # selected_date <- unique(df$Date)[1] #debug
     
     # Makes no sense for this
-    df <- df %>% filter(Analyte != "Total.Events")
+    # TODO we might wanna use if missing so that if no date is specified we select all of them
+    # if (selected_date == "") {}
+    df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date)
     
     # Draw Mean Boxes
     Mean_box_plot <-
@@ -486,13 +489,15 @@ GST_violins <- function(df){
     
     df <- df %>% filter(Data_type == "MFI")
     df$Plate.id <- as.character(df$Plate.id)
+    df$Plate_daywise <- as.character(df$Plate_daywise)
     df$Date <- factor(df$Date)
     head(df)
     
     plot <-
-        ggplot(df, aes(x = Date, y = Gst.Tag, fill = Plate.id)) + 
-        geom_violin(width=0.7) + geom_boxplot(width=0.2, position=position_dodge(0.7)) +
-        labs(x = "", y = "GST Tag", color = "Plate ID")
+        ggplot(df, aes(x = Date, y = Gst.Tag, fill = Plate_daywise)) + 
+        geom_violin(width=0.7, position = position_dodge()) + 
+        geom_boxplot(width=0.2, position=position_dodge(0.7), show.legend = F) +
+        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise")
     
     return(plot)
     

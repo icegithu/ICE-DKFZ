@@ -77,8 +77,12 @@ do.call(plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
 # Figure 2 – Mean Counts in Boxplots ===========================================
 # Bridging and Sample data
 Mean_Boxplots <- list()
-Mean_Boxplots[["Sample"]] <- mean_boxplots(sample_df_mm) + ggtitle("Sample data")
-Mean_Boxplots[["Bridge"]] <- mean_boxplots(bridge_df_mm) + ggtitle("Bridging data")
+
+selected_date <- unique(sample_df_mm$Date)[1]
+Mean_Boxplots[["Sample"]] <- mean_boxplots(sample_df_mm, selected_date) + ggtitle("Sample data")
+
+selected_date <- unique(bridge_df_mm$Date)[1]
+Mean_Boxplots[["Bridge"]] <- mean_boxplots(bridge_df_mm, selected_date) + ggtitle("Bridging data")
 
 do.call(plot_grid, c(Mean_Boxplots, ncol = 1, align = "hv"))
 
