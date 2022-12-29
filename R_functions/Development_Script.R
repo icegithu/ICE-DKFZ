@@ -13,6 +13,7 @@ library("cowplot")
 library("openxlsx")
 library("scales")
 library("tidyverse")
+library("plotly")
 
 # Path to the input data for
 path <- "C:/DKFZ Project Amuse/CKB/"
@@ -101,7 +102,9 @@ blank_bees(bridge_blanks_kt)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-delta_t_pointplot(df1 = sample_data, df2 = bridge_data)
+delta_T_plot <- delta_t_pointplot(df1 = sample_data, df2 = bridge_data)
+# Just to get the legend right :D 
+ggplotly(delta_T_plot)
 
 # Get mean median per plate
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
@@ -125,4 +128,8 @@ KT3_lineplot(bridge_blanks_kt)
 # Sample and bridging data
 
 GST_violins(sample_data)
+#######
+# TODO Only for now:
+bridge_data <- bridge_data %>% filter(Gst.Tag<750)
+#######
 GST_bees(bridge_data)

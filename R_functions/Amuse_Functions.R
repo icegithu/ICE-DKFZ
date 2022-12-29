@@ -459,7 +459,7 @@ KT3_lineplot <- function(df){
         ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
         geom_line(linewidth = 1) + geom_point() +
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
-        labs(x = "", color = "Analyte") 
+        labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
     return(plot)
     
