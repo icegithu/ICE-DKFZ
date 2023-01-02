@@ -385,7 +385,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
         geom_beeswarm(size = 1) + 
         coord_cartesian(ylim = c(-2.5, 2.5))+
         geom_hline(yintercept = 0, linetype = "longdash")+
-        labs(x = "", y = "Delta T (°C)", shape = "Plate Type", color = "Plate ID")
+        labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
     return(plot)
 }
