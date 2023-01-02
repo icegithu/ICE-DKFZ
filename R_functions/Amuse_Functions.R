@@ -6,92 +6,111 @@
 
 read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_info_file){
     
-    Sample_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte", recursive = T)
+    # TODO this regex pattern might need some more work
+    (Sample_plates_raw <- list.files(path = paste0(path_to_file, "/Rohdaten/"), pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
+    
     if (length(Sample_plates_raw) == 0){ return()}
-    
-    (Sample_plates_raw <- Sample_plates_raw[!grepl(" \\d+ ", Sample_plates_raw)])
-    
+    # make an empty container
     Sample_df <- data.frame()
     
     for (x in Sample_plates_raw) {
         
-        # x <- Sample_plates_raw[2]
+        # x <- Sample_plates_raw[1]
         
-        temp_Sample_data_info <- read.csv(file = paste(path_to_file, x, sep="/"), header = F)
-        head(temp_Sample_data_info)
+        temp_sample_data <- read.csv(file = paste(path_to_file, "Rohdaten", x, sep="/"), 
+                                     header = F, row.names = NULL, col.names = paste0("V",1:100))
         
-        # Skip 50 lines to get a correct column detection 
-        temp_Sample_data <- read.csv(file = paste(path_to_file, x, sep="/"), header = F, skip = 51)
-        colnames(temp_Sample_data) <- temp_Sample_data[2,]
+        colnames_start <- which(grepl("Location", temp_sample_data$V1))[1]
+        colnames(temp_sample_data) <- temp_sample_data[colnames_start,]
+        head(temp_sample_data)
         
         # find median table
-        median_table_start <- which(grepl("median", temp_Sample_data$Sample, ignore.case = T))
-        median_table <- temp_Sample_data[(median_table_start+2):(median_table_start+97),]
+        median_table_start <- which(grepl("median", temp_sample_data$Sample, ignore.case = T))
+        median_table <- temp_sample_data[(median_table_start+2):(median_table_start+97),]
         # Remove extra columns if any (some weird machine issues)
         last_col <- which(colnames(median_table) == "Total Events")
         median_table <- median_table[,1:last_col]
         head(median_table)
         
-        # add type
+        # add Data-type
         median_table$Data_Type <- "MFI"
         
         # find count table
-        count_table_start <- which(grepl("^count$", temp_Sample_data$Sample, ignore.case = T))
-        count_table <- temp_Sample_data[(count_table_start+2):(count_table_start+97),]
+        count_table_start <- which(grepl("^count$", temp_sample_data$Sample, ignore.case = T))
+        count_table <- temp_sample_data[(count_table_start+2):(count_table_start+97),]
         # Remove extra columns if any (some weird machine issues)
         last_col <- which(colnames(count_table) == "Total Events")
         count_table <- count_table[,1:last_col]
         head(count_table)
         
-        # add type
+        # add Data-type
         count_table$Data_Type <- "Counts"
         head(count_table, 3)
         
-        # Find the error log for this plate: 
-        plate_x <- gsub(".csv", "", gsub(".* ", "", x))
-        plate_x_error <- list.files(pattern = plate_x, recursive = T)
-        plate_x_error <- plate_x_error[grepl("error", plate_x_error, ignore.case = T)]
-        plate_x_error_data <- read.csv(plate_x_error)
-        delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(plate_x_error_data$Message[26], "Temp .*C \\(")), ".*\\d"))
-        
-        # Put those 2 tables together
+        # Put MFI and Count tables together
         med_count <- rbind(median_table, count_table)
-        med_count$Date <- gsub(" .*", "", gsub("^\\.", "", gsub("[^A-Za-z0-9 ]", ".", temp_Sample_data_info$V2[18])))
+        
+        # Find the log file for the current plate: 
+        plate_x <- gsub(".csv", "", gsub(".* ", "", x))
+        plate_x_log <- list.files(path_to_file, pattern = plate_x, recursive = T)
+        plate_x_log <- plate_x_log[grepl("Log_Messages", plate_x_log, ignore.case = T)]
+        
+        # add the date based on the log file
+        med_count$Date <- gsub("_.*", "", gsub(".*Log_Messages_", "", plate_x_log))
+        
+        # add the week number
         med_count$Week <- gsub("Woche", "Week_", str_extract(x, "Woche\\d+"))
+        
+        # read in the log file and add the delta T
+        plate_x_log_data <- readxl::read_xls(path = paste0(path_to_file, plate_x_log))
+        delta_start <- which(grepl("Delta Calibration Temp", plate_x_log_data$Message, ignore.case = T))[1]
+        delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(plate_x_log_data$Message[delta_start], "Temp .*C \\(")), ".*\\d"))
+        
+        # add the Delta T
         med_count$Delta_T <- delta_temp
         head(med_count)
         
-        # TODO 
-        # Probably wont need for "real" data the next line
-        med_count$Sample <- gsub(".csv", "", gsub(".* ", "", x))
-        # #####
+        # add the sample from first cell to all the rest of in the same column
+        med_count$Sample <- med_count$Sample[1]
         
-        # Need some renaming:
-        med_count <- med_count %>% rename(Plate.ID = Sample,
-                                          position = Location)
+        # Rename for later
+        med_count <- med_count %>% 
+            select(-matches("NA")) %>% 
+            rename(Plate.ID = Sample, position = Location)
         
+        # add the well number (might be useful in the future)
+        # med_count$well <- str_extract(med_count$position, "[A-H]\\d\\d?")
+        
+        # add the position on the plate (basically like a well number)
         med_count$position <- as.numeric(gsub("\\(.*", "", med_count$position))
-        head(med_count)
-        dim(med_count)
-        colnames(med_count)
         
+        # save the output into the container
         Sample_df <- rbind(Sample_df, med_count)
-        dim(Sample_df)
-        colnames(Sample_df)
         
+        # Fix rownames
         rownames(Sample_df) <- NULL
     }
     
     # Merge raw data with Sample info file using plate ID,  
+    head(Sample_info_file)
     Sample_all <- left_join(Sample_df, Sample_info_file, by = c("Plate.ID", "position"))
     colnames(Sample_all) <- str_to_title(colnames(Sample_all))
-    Sample_all <- Sample_all %>% relocate(contains("Analyte"), .after = last_col())
+    Sample_all <- Sample_all %>% relocate(c("Plate.id", "Position", "Well", "Sample.id" , "Data_type", "Week", "Date", "Delta_t", "Fortnr", "Plate.number.intern", "Study", 
+                                            "Plate_daywise", "Assay.day", "Assay.date", "Comment"))
+    head(Sample_all)
     
-    # save data
-    # TODO at the moment I select the first date occurance. 
-    (filename <- paste0("./", "Combined_Output/Sample_data_", 
-                        unique(Sample_all$Week), "_", unique(Sample_all$Date)[1], ".csv"))
+    # save the data
+    start_date <- min(unique(Sample_all$Date))
+    end_date <- max(unique(Sample_all$Date))
+    
+    (filename <- paste0(path_to_file, "Combined_Output/Sample_data_", 
+                        unique(Sample_all$Week), "_", start_date, "-", end_date, ".csv"))
+    
+    # Make the output dir if not there yet
+    if (!dir.exists(paste0(path_to_file, "Combined_Output"))) {dir.create(paste0(path_to_file, "Combined_Output"), recursive = T)}
+    
     write_csv(x = Sample_all, file = filename)
+    
     print(paste("Sample data collected and saved under:", filename))
 }
 
@@ -99,52 +118,72 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
 read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge_info_file){
     
     # Read in bridging plates  
-    (Bridge_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte \\d+", recursive = T))
+    # TODO this regex pattern might need some more work
+    (Bridge_plates_raw <- list.files(path = paste0(path_to_file, "/Rohdaten/"), pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
+    
     if (length(Bridge_plates_raw) == 0){ return()}
     # make an empty container
     Bridge_df <- data.frame()
     
     for (x in Bridge_plates_raw) {
         
-        # x <- Bridge_plates_raw[2]
+        # x <- Bridge_plates_raw[1]
         
-        temp_Bridge_df <- read.csv(paste(path_to_file, x, sep="/"), header = F, skip = 36)   
-        colnames(temp_Bridge_df) <- temp_Bridge_df[4,]
+        temp_bridge_data <- read.csv(file = paste(path_to_file, "Rohdaten", x, sep="/"), 
+                                     header = F, row.names = NULL, col.names = paste0("V",1:100))
+        head(temp_bridge_data)
+        
+        (colnames_start <- which(grepl("Location", temp_bridge_data$V1))[1])
+        colnames(temp_bridge_data) <- temp_bridge_data[colnames_start,]
+        head(temp_bridge_data)
         
         # median starts from 1st row
-        Bridge_median_start <- which(grepl("median", temp_Bridge_df$Sample, ignore.case = T))
-        Bridge_median_df <- temp_Bridge_df[(Bridge_median_start+2):(Bridge_median_start+97),]
-        Bridge_median_df$Data_Type <- "MFI"
+        (median_start <- which(grepl("median", temp_bridge_data$Sample, ignore.case = T)))
+        bridge_median_df <- temp_bridge_data[(median_start+2):(median_start+97),]
+        bridge_median_df$Data_Type <- "MFI"
         
         # count 
-        Bridge_count_start <- which(grepl('^count$', temp_Bridge_df$Sample, ignore.case = T))
-        Bridge_count_table <- temp_Bridge_df[(Bridge_count_start+2):(Bridge_count_start+97),]
-        Bridge_count_table$Data_Type <- "Counts"
+        count_start <- which(grepl('^count$', temp_bridge_data$Sample, ignore.case = T))
+        bridge_count_table <- temp_bridge_data[(count_start+2):(count_start+97),]
+        bridge_count_table$Data_Type <- "Counts"
         
-        # Find the error log for this plate: 
-        bridge_x <- str_extract(x, "\\d\\d\\d\\d\\d\\d")
-        bridge_x_error <- list.files(pattern = bridge_x, recursive = T)
-        bridge_x_error <- bridge_x_error[grepl("error", bridge_x_error, ignore.case = T)]
-        bridge_x_error_data <- read.csv(bridge_x_error)
-        bridge_delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(bridge_x_error_data$Message[26], "Temp .*C \\(")), ".*\\d"))
+        # Put those MFI and Count tables together
+        Bridge_med_count <- rbind(bridge_median_df, bridge_count_table)
         
-        # Put those 2 tables together
-        Bridge_med_count <- rbind(Bridge_median_df, Bridge_count_table)
+        #####################################
+        # Find the log file for this plate: 
+        bridge_x <- str_extract(x, "FM Platte \\d\\d\\d\\d")
+        bridge_x_log <- list.files(path_to_file, pattern = bridge_x, recursive = T)
+        (bridge_x_log <- bridge_x_log[grepl("Log_Messages", bridge_x_log, ignore.case = T)])
         
-        # TODO 
-        # Probably wont need for "real" data the next line: in real data, Sample should be 000001 etc.
-        Bridge_med_count$Sample <- str_extract(x, "\\d\\d\\d\\d\\d\\d")
-        ### 
+        # add the date based on the log file
+        Bridge_med_count$Date <- gsub("_.*", "", gsub(".*Log_Messages_", "", bridge_x_log))
         
-        Bridge_med_count$Date <- str_extract(x, "\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d")
-        Bridge_med_count$Week <- gsub("Woche", "Week_", str_extract(x, "Woche\\d+"))
-        Bridge_med_count$Delta_T <- bridge_delta_temp
+        # add the week number
+        Bridge_med_count$Week <- gsub("Woche", "Week_", str_extract(bridge_x_log, "Woche\\d+"))
         
-        # Need some renaming:
-        Bridge_med_count <- Bridge_med_count %>% rename(Plate.ID = Sample,
-                                                        position = Location)
+        # read in the log file and add the delta T
+        Bridge_plate_x_log_data <- readxl::read_xls(path = paste0(path_to_file, bridge_x_log))
+        delta_start <- which(grepl("Delta Calibration Temp", Bridge_plate_x_log_data$Message, ignore.case = T))[1]
+        delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(Bridge_plate_x_log_data$Message[delta_start], "Temp .*C \\(")), ".*\\d"))
         
+        # add the Delta T
+        Bridge_med_count$Delta_T <- delta_temp
+        
+        # add the sample from first cell to all the rest of in the same column
+        Bridge_med_count$Sample <- Bridge_med_count$Sample[1]
+        
+        # Rename for later
+        Bridge_med_count <- Bridge_med_count %>% 
+            select(-matches("NA")) %>% 
+            rename(Plate.ID = Sample, position = Location)
+        
+        # add the well number (might be useful in the future)
+        # med_count$well <- str_extract(med_count$position, "[A-H]\\d\\d?")
+        
+        # add the position on the plate (basically like a well number)
         Bridge_med_count$position <- as.numeric(gsub("\\(.*", "", Bridge_med_count$position))
+        head(Bridge_med_count)
         
         # Save data into one container
         Bridge_df <- rbind(Bridge_df, Bridge_med_count)
@@ -155,13 +194,28 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     
     Bridge_all <- left_join(Bridge_df, Bridge_info_file, by = c("Plate.ID", "position"))
     colnames(Bridge_all) <- str_to_title(colnames(Bridge_all))
+    
+    # Merge raw data with Sample info file using plate ID,  
+    head(Bridge_all)
+    Bridge_all <- Bridge_all %>% relocate(c("Plate.id", "Position", "Well", "Sample.id" , "Data_type", 
+                                            "Week", "Date", "Delta_t", "Fortnr", "Plate.number.intern", 
+                                            "Study", "Plate", "Assay.day", "Assay.date", "Comment"))
+    head(Bridge_all,2)
+    
     Bridge_all <- Bridge_all %>% relocate(contains("Analyte"), .after = last_col())
     
-    # save data
-    # TODO at the moment I select the first date occurance. 
-    (filename <- paste0("./", "Combined_Output/Bridging_data_", 
-                        unique(Bridge_all$Week), "_", unique(Bridge_all$Date)[1], ".csv"))
+    # save the data
+    (start_date <- min(unique(Bridge_all$Date)))
+    (end_date <- max(unique(Bridge_all$Date)))
+    
+    (filename <- paste0(path_to_file, "Combined_Output/Bridging_data_", 
+                        unique(Bridge_all$Week), "_", start_date, "-", end_date, ".csv"))
+    
+    # Make the output dir if not there yet
+    if (!dir.exists(paste0(path_to_file, "Combined_Output"))) {dir.create(paste0(path_to_file, "Combined_Output"), recursive = T)}
+    
     write_csv(x = Bridge_all, file = filename)
+    
     print(paste("Bridging data collected and saved under:", filename))
 }
 
@@ -171,10 +225,17 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
 # get mean and median. Works on both Sample and Bridging data
 get_mean_median <- function(df){
     
+    # df <- bridge_data # debug
+    # head(df)
+    
+    start <- which(colnames(df) == "Comment")
+    analyte_cols <- colnames(df)[(start + 1) : ncol(df)]
+    analyte_cols
+    
     final_df <- 
         df %>% 
-        select(Plate.id, Date, Sample.id, Data_type, contains("Analyte")) %>%
-        pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "Value") %>%
+        select(Plate.id, Date, Sample.id, Data_type, matches(analyte_cols)) %>%
+        pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "Value") %>%
         group_by(Plate.id, Date, Analyte, Data_type) %>% 
         summarise(Mean = mean(Value, na.rm = T),
                   Median = median(Value,  na.rm = T)) %>% 
@@ -196,6 +257,11 @@ theme_set(
 mean_median_lineplots <- function(df, log_toggle){
     
     # df <- bridge_df_mm #debug
+    head(df)
+    
+    df$Date <- factor(df$Date)
+    df$Analyte <- factor(df$Analyte)
+    df$Analyte <- fct_relevel(df$Analyte, c("Gst.Tag", "Total.Events"), after = Inf)
     
     out_list <- list()
     # Draw median MFI lineplot
@@ -232,9 +298,15 @@ mean_median_lineplots <- function(df, log_toggle){
 # Bridging and Sample data
 
 # Draw the mean median boxplots function
-mean_boxplots <- function(df){
+mean_boxplots <- function(df, selected_date = ""){
     
     # df <- sample_df_mm #debug
+    # selected_date <- unique(df$Date)[1] #debug
+    
+    # Makes no sense for this
+    # TODO we might wanna use if missing so that if no date is specified we select all of them
+    # if (selected_date == "") {}
+    df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date)
     
     # Draw Mean Boxes
     Mean_box_plot <-
@@ -253,10 +325,15 @@ get_blanks_kt <- function(df){
     
     # df <- sample_data # debug
     
+    start <- which(colnames(df) == "Comment")
+    analyte_cols <- colnames(df)[(start + 1) : ncol(df)]
+    analyte_cols
+    
     final_df <- 
-        df %>% filter(grepl("blank|KT-3", Sample.id) & Data_type == "MFI") %>% 
-        select(Plate.id, Date, Sample.id, contains("Analyte")) %>%
-        pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI")
+        df %>% filter(grepl("blank|KT3", Sample.id) & Data_type == "MFI") %>% 
+        select(Plate.id, Date, Sample.id, matches(analyte_cols)) %>%
+        pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>% 
+        filter(Analyte != "Total.Events")
     
     return(final_df)
     
@@ -268,6 +345,8 @@ blank_bees <- function(df){
     # df <- sample_blanks_kt # debug
     df <- df %>% filter(Sample.id == "blank")
     df$Plate.id <- as.character(df$Plate.id)
+    df$Analyte <- factor(df$Analyte)
+    df$Analyte <- fct_relevel(df$Analyte, c("Gst.Tag"), after = Inf)
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
@@ -304,8 +383,10 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     
     plot <-
         ggplot(combo_df, aes(x = Date, y = Delta_t, shape = Type, color = Plate.id)) +
-        geom_point(position = position_dodge(0.3), size = 2) + 
-        labs(x = "", y = "Delta T (°C)", shape = "Plate Type", color = "Plate ID")
+        geom_beeswarm(size = 1) + 
+        coord_cartesian(ylim = c(-2.5, 2.5))+
+        geom_hline(yintercept = 0, linetype = "longdash")+
+        labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
     return(plot)
 }
@@ -318,10 +399,14 @@ get_mean_median_per_plate <- function(df){
     # df <- sample_data #debug
     # head(df)
     
+    start <- which(colnames(df) == "Comment")
+    analyte_cols <- colnames(df)[(start + 1) : ncol(df)]
+    analyte_cols
+    
     final_df <- df %>% 
         filter(Data_type == "MFI") %>% 
-        select(Plate.id, Date, Week, Plate_daywise, contains("Analyte")) %>%
-        pivot_longer(cols = contains("Analyte"), names_to = "Analyte", values_to = "MFI") %>%
+        select(Plate.id, Date, Week, Plate_daywise, matches(analyte_cols)) %>%
+        pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
         group_by(Plate.id, Date, Week, Plate_daywise, Analyte) %>% 
         summarise(Mean_MFI = mean(MFI),
                   Median_MFI = median(MFI))
@@ -334,6 +419,9 @@ get_mean_median_per_plate <- function(df){
 mm_per_plate_lineplots <- function(df, x_axis = x_axis){
     
     # df <- sample_df_mm_per_plate # Debug
+    
+    df$Date <- factor(df$Date)
+    df$Plate_daywise <- factor(df$Plate_daywise)
     
     out_list <- list()
     
@@ -363,16 +451,16 @@ KT3_lineplot <- function(df){
     
     # df <- sample_blanks_kt # debug
     
-    df <- df %>% filter(Sample.id == "KT-3")# %>% 
-    # TODO this needs summarising over something at one point when we have more plates    
-    # group_by(Plate.id, Date) %>% 
-    # summarise(Mean_MFI = mean(MFI))
+    df <- df %>% filter(Sample.id == "KT3")# %>%
+    df$Date <- factor(df$Date)
+    df$Analyte <- factor(df$Analyte)
+    df$Analyte <- fct_relevel(df$Analyte, "Gst.Tag", after = Inf)
     
     plot <-
         ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
         geom_line(linewidth = 1) + geom_point() +
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
-        labs(x = "", color = "Analyte") 
+        labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
     return(plot)
     
@@ -382,18 +470,40 @@ KT3_lineplot <- function(df){
 # Draw the GST bees function
 GST_bees <- function(df){
     
-    # df <- sample_data # debug
+    # df <- bridge_data # debug
     
     df <- df %>% filter(Data_type == "MFI")
     df$Plate.id <- as.character(df$Plate.id)
+    df$Date <- factor(df$Date)
     
     plot <-
-        ggplot(df, aes(x = Date, y = GST_tag, color = Plate.id)) + 
+        ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
     
     return(plot)
     
 }    
+
+GST_violins <- function(df){
+    
+    # df <- sample_data # debug
+    
+    df <- df %>% filter(Data_type == "MFI")
+    df$Plate.id <- as.character(df$Plate.id)
+    df$Plate_daywise <- as.character(df$Plate_daywise)
+    df$Date <- factor(df$Date)
+    head(df)
+    
+    plot <-
+        ggplot(df, aes(x = Date, y = Gst.Tag, fill = Plate_daywise)) + 
+        geom_violin(width=0.7, position = position_dodge()) + 
+        geom_boxplot(width=0.2, position=position_dodge(0.7), show.legend = F) +
+        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise")
+    
+    return(plot)
+    
+}    
+
 
 get_avaliable_dates <- function(summary_dir){
     # get all files available
