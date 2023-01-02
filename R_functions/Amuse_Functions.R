@@ -6,17 +6,18 @@
 
 read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_info_file){
     
-    # TODO this regex pattern might need some work
-    Sample_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T)
-    if (length(Sample_plates_raw) == 0){ return()}
+    # TODO this regex pattern might need some more work
+    (Sample_plates_raw <- list.files(path = paste0(path_to_file, "/Rohdaten/"), pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
     
+    if (length(Sample_plates_raw) == 0){ return()}
+    # make an empty container
     Sample_df <- data.frame()
     
     for (x in Sample_plates_raw) {
         
         # x <- Sample_plates_raw[1]
         
-        temp_sample_data <- read.csv(file = paste(path_to_file, x, sep="/"), 
+        temp_sample_data <- read.csv(file = paste(path_to_file, "Rohdaten", x, sep="/"), 
                                      header = F, row.names = NULL, col.names = paste0("V",1:100))
         
         colnames_start <- which(grepl("Location", temp_sample_data$V1))[1]
@@ -117,8 +118,8 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
 read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge_info_file){
     
     # Read in bridging plates  
-    # TODO this regex pattern might need some work
-    (Bridge_plates_raw <- list.files(path = path_to_file, pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
+    # TODO this regex pattern might need some more work
+    (Bridge_plates_raw <- list.files(path = paste0(path_to_file, "/Rohdaten/"), pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
     
     if (length(Bridge_plates_raw) == 0){ return()}
     # make an empty container
@@ -128,7 +129,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
         
         # x <- Bridge_plates_raw[1]
         
-        temp_bridge_data <- read.csv(file = paste(path_to_file, x, sep="/"), 
+        temp_bridge_data <- read.csv(file = paste(path_to_file, "Rohdaten", x, sep="/"), 
                                      header = F, row.names = NULL, col.names = paste0("V",1:100))
         head(temp_bridge_data)
         
