@@ -74,9 +74,9 @@ ui <- fluidPage(
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        fluidRow(
+                           column(4, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
                            column(4, downloadButton("download_box_count_bridge", "Download Count Bridge")),
                            column(4, downloadButton("download_box_count_sample", "Download Count Sample")),
-                           column(4, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
                        ),
                        tags$h3("Mean Count Bridging"),
                        plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
@@ -238,13 +238,13 @@ server <- function(input, output, session) {
   })
   
   update_calendar <- reactive({
-      # TODO: This update still doesnt work :(
+      # TODO: Connect the selection of this calender to the plot
       highlightedDates  <- as.Date(dates_to_load$dates,format="%Y%m%d")
       calendar_options <- data.frame(highlightedDates)
       
       updateAirDateInput(
           session = session,
-          input$date_boxplot,
+          "date_boxplot",
           value = calendar_options$highlightedDates,
           options = calendar_options
       )
