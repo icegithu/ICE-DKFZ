@@ -71,11 +71,9 @@ ui <- fluidPage(
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
-                       fluidRow(
-                           column(4, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
-                           column(4, downloadButton("download_box_count_bridge", "Download Count Bridge")),
-                       ),
+                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T),
                        tags$h3("Mean Count Bridging"),
+                       downloadButton("download_box_count_bridge", "Download Count Bridge"),
                        plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Mean Count Sample"),
                        downloadButton("download_box_count_sample", "Download Count Sample"),
