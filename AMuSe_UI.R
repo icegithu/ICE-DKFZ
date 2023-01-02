@@ -20,7 +20,7 @@ library(ggbeeswarm) # for beeswarm
 # Set Working directories ======================================================
 
 SUMMARY_DIR = "./Combined_Output"
-RAW_DATA_DIR = "./CKB/Rohdaten"
+RAW_DATA_DIR = "./CKB/"
 FUNCTIONS_DIR = "./R_functions"
 BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
 SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
@@ -167,14 +167,10 @@ server <- function(input, output, session) {
     })
 
   observeEvent(input$create_summaries,{
-    # here we call the script to create summaries
-    week_list <- list.files(RAW_DATA_DIR)
     sample_info <- read.xlsx(SAMPLE_INFO_FILE)
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
-    for (i in 1:length(week_list)){
-        read_in_sample_data(paste0(RAW_DATA_DIR,"/",week_list[i]), sample_info)
-        read_in_bridging_data(paste0(RAW_DATA_DIR,"/",week_list[i]), bridge_info)
-    }
+    read_in_sample_data(paste0(RAW_DATA_DIR), sample_info)
+    read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info)
     get_dates_to_load()
     load_data()
     
