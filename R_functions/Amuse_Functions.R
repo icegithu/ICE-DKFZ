@@ -509,7 +509,9 @@ get_avaliable_dates <- function(summary_dir){
     # get all files available
     files_list <- list.files(summary_dir)
     # get dates from those files
-    date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d"))
+    # date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d")) # old file date format
+    # new date format
+    date_list <- unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d"))
     date_list <- date_list[!is.na(date_list)]
     return(date_list)
 }
@@ -524,6 +526,14 @@ remove_hover_duplicate <- function(p){
                 p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list[[1]]),collapse = "<br")
             }
         }
+    }
+    return(p)
+}
+
+remove_parenthesis_legend <- function(p){
+    for (i in 1:length(p[["x"]][["data"]])){
+        name <- p[["x"]][["data"]][[i]][["name"]]
+        p[["x"]][["data"]][[i]][["name"]] <- str_remove_all(str_remove_all(name,"\\("),"\\)")
     }
     return(p)
 }
