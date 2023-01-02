@@ -42,7 +42,7 @@ ui <- fluidPage(
               tabPanel("Load Files",
                        tags$div(tags$p()),
                        fluidRow(
-                          column(2, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1)),
+                          column(4, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1)),
                           # column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
                           column(4, align = "left", 
                                  verbatimTextOutput("files_to_load_text"),
@@ -55,8 +55,11 @@ ui <- fluidPage(
               tabPanel("MFI Bridging",
                        tags$h2("Line plots Bridging data"),
                        fluidRow(
-                           column(2, align = "left",
-                                  downloadButton("download_MFI_bridge", "Download"),
+                           column(4, align = "left",
+                                  downloadButton("download_MFI_bridge_mean", "Download Mean Plot"),
+                           ),
+                           column(4, align = "left",
+                                  downloadButton("download_MFI_bridge_median", "Download Median Plot"),
                            ),
                            column(2,
                                div(id='my_log', materialSwitch(inputId = "log_linear", value = F,
@@ -71,8 +74,9 @@ ui <- fluidPage(
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        fluidRow(
-                           column(2, downloadButton("download_box_count", "Download")),
-                           column(2, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
+                           column(4, downloadButton("download_box_count_bridge", "Download Count Bridge")),
+                           column(4, downloadButton("download_box_count_sample", "Download Count Sample")),
+                           column(4, airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T)),
                        ),
                        tags$h3("Mean Count Bridging"),
                        plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
@@ -82,7 +86,10 @@ ui <- fluidPage(
               ),
               tabPanel("Blank values",
                        tags$h2("Blank Values"),
-                       downloadButton("download_blank", "Download"),
+                       fluidRow(
+                          column(4, downloadButton("download_blank_sample", "Download Sample")),
+                          column(4, downloadButton("download_blank_bridge", "Download Bridge"))
+                       ),
                        tags$h3("Sample Data"),
                        plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
@@ -97,11 +104,12 @@ ui <- fluidPage(
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
                        fluidRow(
-                           column(2, align="left", downloadButton("download_MFI_perplate", "Download")),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
                               radioButtons("perplate_display","", c("daywise" = "Date", "weekwise" = "Week","per plate" = "Plate_daywise"), inline=T)
-                           )
+                           ),
+                           column(3, downloadButton("download_MFI_perplate_mean", "Download Mean")),
+                           column(3, downloadButton("download_MFI_perplate_median", "Download Median")),
                        ),
                        tags$h3("Mean MFI"),
                        plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT, width = PLOT_WIDTH),
@@ -110,7 +118,10 @@ ui <- fluidPage(
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
-                       downloadButton("download_KT3", "Download"),
+                       fluidRow(
+                          column(4, downloadButton("download_KT3_sample", "Download Sample")),
+                          column(4, downloadButton("download_KT3_bridge", "Download Bridge")),
+                       ),
                        tags$h3("Sample Data"),
                        plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
@@ -118,7 +129,10 @@ ui <- fluidPage(
               ),
               tabPanel("GST Plot",
                        tags$h2("GST"),
-                       downloadButton("download_GST", "Download"),
+                       fluidRow(
+                           column(4, downloadButton("download_GST_sample", "Download Sample")),
+                           column(4, downloadButton("download_GST_bridge", "Download Bridge")),
+                       ),
                        tags$h3("Sample Data"),
                        plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
@@ -244,9 +258,8 @@ server <- function(input, output, session) {
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                          input$log_linear)[["Mean"]]))
   })
-  # TODO: Do we want to download both plots in just one html? or one download button each?
-  output$download_MFI_bridge <- downloadHandler(
-      filename = "MFI_bridge.html",
+  output$download_MFI_bridge_mean <- downloadHandler(
+      filename = "MFI_bridge_mean.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
               ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,input$log_linear)[["Mean"]]))),file)
@@ -258,6 +271,15 @@ server <- function(input, output, session) {
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                           input$log_linear)[["Median"]]))
   })
+  
+  output$download_MFI_bridge_median <- downloadHandler(
+      filename = "MFI_bridge_median.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
+              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,input$log_linear)[["Median"]]))),file)
+          
+      }
+  )
 
   ## TAB 2 ====
   output$Mean_Count_Bridging  <- renderPlotly({
@@ -268,10 +290,17 @@ server <- function(input, output, session) {
       ggplotly(mean_boxplots(loaded_files$Sample_mm))
   })
 
-  output$download_box_count <- downloadHandler(
-      filename = "Counts.html",
+  output$download_box_count_bridge <- downloadHandler(
+      filename = "Counts_bridge.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(ggplotly(mean_boxplots(loaded_files$Bridge_mm))),file)
+      }
+  )
+  
+  output$download_box_count_sample <- downloadHandler(
+      filename = "Counts_sample.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(mean_boxplots(loaded_files$Sample_mm))),file)
       }
   )
   
@@ -285,10 +314,17 @@ server <- function(input, output, session) {
       ggplotly(blank_bees(loaded_files$Bridge_blanks))
   })
   
-  output$download_blank <- downloadHandler(
-      filename = "Blanks.html",
+  output$download_blank_sample <- downloadHandler(
+      filename = "Blanks_sample.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(ggplotly(blank_bees(loaded_files$Sample_blanks))),file)
+      }
+  )
+  
+  output$download_blank_bridge <- downloadHandler(
+      filename = "Blanks_bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(blank_bees(loaded_files$Bridge_blanks))),file)
       }
   )
   
@@ -316,11 +352,19 @@ server <- function(input, output, session) {
       remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Median"]]))
   })
   
-  output$download_MFI_perplate <- downloadHandler(
-      filename = paste0("MFI",input$perplate_display,".html"),
+  output$download_MFI_perplate_mean <- downloadHandler(
+      filename = paste0("MFI",input$perplate_display,"_mean.html"),
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
               ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Mean"]]))),file)
+      }
+  )
+  
+  output$download_MFI_perplate_median <- downloadHandler(
+      filename = paste0("MFI",input$perplate_display,"_median.html"),
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
+              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Median"]]))),file)
       }
   )
   
@@ -334,10 +378,17 @@ server <- function(input, output, session) {
       remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Bridge_blanks)))
   })
   
-  output$download_KT3 <- downloadHandler(
+  output$download_KT3_sample <- downloadHandler(
       filename = "KT3_Sample.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Sample_blanks)))),file)
+      }
+  )
+  
+  output$download_KT3_bridge <- downloadHandler(
+      filename = "KT3_Bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Bridge_blanks)))),file)
       }
   )
   
@@ -351,10 +402,17 @@ server <- function(input, output, session) {
       ggplotly(GST_bees(loaded_files$Bridge))
   })
   
-  output$download_GST <- downloadHandler(
+  output$download_GST_sample <- downloadHandler(
       filename = "GST_Sample.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(ggplotly(GST_bees(loaded_files$Sample))),file)
+      }
+  )
+  
+  output$download_GST_bridge <- downloadHandler(
+      filename = "GST_Bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(GST_bees(loaded_files$Bridge))),file)
       }
   )
   
