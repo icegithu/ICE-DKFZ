@@ -311,7 +311,9 @@ mean_boxplots <- function(df, selected_date = ""){
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() + labs(x = "", y = "Mean Counts") 
+        geom_boxplot() + labs(x = "", y = "Mean Counts") +
+        labs(subtitle = paste("Showing data from", selected_date)) + 
+        theme(plot.subtitle = element_text(size = rel(1.0), face = "bold", hjust = 1))
     
     return(Mean_box_plot)
     
@@ -420,8 +422,8 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis){
     
     # df <- sample_df_mm_per_plate # Debug
     
-    df$Date <- factor(df$Date)
-    df$Plate_daywise <- factor(df$Plate_daywise)
+    df <- df %>% ungroup() %>% filter(Analyte != "Total.Events") %>% 
+        mutate(across(c(Date, Plate_daywise), factor))
     
     out_list <- list()
     
@@ -495,10 +497,13 @@ GST_violins <- function(df){
     head(df)
     
     plot <-
-        ggplot(df, aes(x = Date, y = Gst.Tag, fill = Plate_daywise)) + 
-        geom_violin(width=0.7, position = position_dodge()) + 
-        geom_boxplot(width=0.2, position=position_dodge(0.7), show.legend = F) +
-        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise")
+        ggplot(df, aes(x = Plate_daywise, y = Gst.Tag, fill = Plate_daywise)) + 
+        geom_violin(width=0.7, alpha = 0.5) + 
+        geom_boxplot(width=0.2, show.legend = F) +
+        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise") + 
+        facet_grid(~ Date) +
+        theme(strip.background = element_blank(), 
+              strip.text.x = element_text(size = rel(1.3)))
     
     return(plot)
     
