@@ -311,11 +311,11 @@ mean_boxplots <- function(df, selected_date = ""){
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() + labs(x = "", y = "Mean Counts") +
-        labs(subtitle = paste("Showing data from", selected_date)) + 
-        theme(plot.subtitle = element_text(size = rel(1.0), face = "bold", hjust = 1))
-    
-    return(Mean_box_plot)
+        geom_boxplot() + labs(x = "", y = "Mean Counts")
+    p <- ggplotly(Mean_box_plot)
+    p <- p %>% layout(annotations = list(list(showarrow = FALSE,yref = "paper",
+                                  y=0.9,text = paste("Showing data from", selected_date))))
+    return(p)
     
 }
 
@@ -354,7 +354,7 @@ blank_bees <- function(df){
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
         geom_beeswarm() + labs(color = "Plate.ID", x = "")
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
@@ -390,7 +390,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
         geom_hline(yintercept = 0, linetype = "longdash")+
         labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
-    return(plot)
+    return(ggplotly(plot))
 }
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
@@ -464,7 +464,7 @@ KT3_lineplot <- function(df){
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
-    return(plot)
+    return(remove_hover_duplicate(ggplotly(plot)))
     
 }    
 
@@ -482,7 +482,7 @@ GST_bees <- function(df){
         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
@@ -505,7 +505,7 @@ GST_violins <- function(df){
         theme(strip.background = element_blank(), 
               strip.text.x = element_text(size = rel(1.3)))
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
