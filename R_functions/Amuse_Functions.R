@@ -277,14 +277,14 @@ mean_median_lineplots <- function(df, log_toggle){
     if (log_toggle) {
         
         out_list[["Mean"]] <- out_list[["Mean"]] + 
-            scale_y_log10("Log10(Mean MFI",
+            scale_y_log10("Log10(Mean MFI)",
                           breaks = scales::trans_breaks("log10", function(x) 10^x),
                           labels = scales::trans_format("log10", math_format(10^.x))) +
             annotation_logticks(sides = "l")
         
         
         out_list[["Median"]] <- out_list[["Median"]] + 
-            scale_y_log10("Log10(Median MFI",
+            scale_y_log10("Log10(Median MFI)",
                           breaks = scales::trans_breaks("log10", function(x) 10^x),
                           labels = scales::trans_format("log10", math_format(10^.x))) +
             annotation_logticks(sides = "l")
