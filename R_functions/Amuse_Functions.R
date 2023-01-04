@@ -303,18 +303,21 @@ mean_boxplots <- function(df, selected_date = ""){
     # df <- sample_df_mm #debug
     # selected_date <- unique(df$Date)[1] #debug
     
-    # Makes no sense for this
     # TODO we might wanna use if missing so that if no date is specified we select all of them
     # if (selected_date == "") {}
+    
     df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date)
     
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() + labs(x = "", y = "Mean Counts") 
+        geom_boxplot() + labs(x = "", y = "Mean Counts")
     
-    return(Mean_box_plot)
+    plotly_box <- ggplotly(Mean_box_plot) %>% 
+        layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
+                                       text = paste("Showing data from", selected_date))))
     
+    return(plotly_box)
 }
 
 # Figure 3 – Blank MFI Boxplots =================================================
@@ -352,7 +355,7 @@ blank_bees <- function(df){
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
         geom_beeswarm() + labs(color = "Plate.ID", x = "")
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
@@ -369,6 +372,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     delta_df1 <- df1 %>% 
         dplyr::select(Plate.id, Date, Delta_t) %>% 
         distinct()
+    
     # Subset data    
     delta_df2 <- df2 %>% 
         dplyr::select(Plate.id, Date, Delta_t) %>% 
@@ -388,7 +392,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
         geom_hline(yintercept = 0, linetype = "longdash")+
         labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
-    return(plot)
+    return(ggplotly(plot))
 }
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
@@ -420,8 +424,8 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis){
     
     # df <- sample_df_mm_per_plate # Debug
     
-    df$Date <- factor(df$Date)
-    df$Plate_daywise <- factor(df$Plate_daywise)
+    df <- df %>% ungroup() %>% filter(Analyte != "Total.Events") %>% 
+        mutate(across(c(Date, Plate_daywise), factor))
     
     out_list <- list()
     
@@ -462,7 +466,7 @@ KT3_lineplot <- function(df){
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
-    return(plot)
+    return(remove_hover_duplicate(ggplotly(plot)))
     
 }    
 
@@ -480,7 +484,7 @@ GST_bees <- function(df){
         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
@@ -495,12 +499,15 @@ GST_violins <- function(df){
     head(df)
     
     plot <-
-        ggplot(df, aes(x = Date, y = Gst.Tag, fill = Plate_daywise)) + 
-        geom_violin(width=0.7, position = position_dodge()) + 
-        geom_boxplot(width=0.2, position=position_dodge(0.7), show.legend = F) +
-        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise")
+        ggplot(df, aes(x = Plate_daywise, y = Gst.Tag, fill = Plate_daywise)) + 
+        geom_violin(width=0.7, alpha = 0.5) + 
+        geom_boxplot(width=0.2, show.legend = F) +
+        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise") + 
+        facet_grid(~ Date) +
+        theme(strip.background = element_blank(), 
+              strip.text.x = element_text(size = rel(1.3)))
     
-    return(plot)
+    return(ggplotly(plot))
     
 }    
 
