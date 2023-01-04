@@ -123,7 +123,7 @@ ui <- fluidPage(
                        tags$h2("GST"),
                        tags$h3("Sample Data"),
                        downloadButton("download_GST_sample", "Download Sample"),
-                       plotOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_GST_bridge", "Download Bridge"),
                        plotlyOutput(outputId = "GST_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
@@ -263,67 +263,68 @@ server <- function(input, output, session) {
   output$Mean_Count_Bridging  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
       if (any(loaded_files$Bridge_mm$Date==date_as_number)){
-        ggplotly(mean_boxplots(loaded_files$Bridge_mm,date_as_number))
+        mean_boxplots(loaded_files$Bridge_mm,date_as_number)
       }
   })
 
   output$Mean_Count_Sample  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
       if (any(loaded_files$Sample_mm$Date==date_as_number)){
-          ggplotly(mean_boxplots(loaded_files$Sample_mm,date_as_number))
+          mean_boxplots(loaded_files$Sample_mm,date_as_number)
       }
   })
 
   output$download_box_count_bridge <- downloadHandler(
       filename = "Counts_bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(mean_boxplots(loaded_files$Bridge_mm))),file)
+          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+          htmlwidgets::saveWidget(as_widget(mean_boxplots(loaded_files$Bridge_mm,date_as_number)),file)
       }
   )
   
   output$download_box_count_sample <- downloadHandler(
       filename = "Counts_sample.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(mean_boxplots(loaded_files$Sample_mm))),file)
+          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+          htmlwidgets::saveWidget(as_widget(mean_boxplots(loaded_files$Sample_mm,date_as_number)),file)
       }
   )
   
   ## TAB 3 ====
   
   output$Blank_Sample  <- renderPlotly({
-      ggplotly(blank_bees(loaded_files$Sample_blanks))
+      blank_bees(loaded_files$Sample_blanks)
   })
 
   output$Blank_Bridging  <- renderPlotly({
-      ggplotly(blank_bees(loaded_files$Bridge_blanks))
+      blank_bees(loaded_files$Bridge_blanks)
   })
   
   output$download_blank_sample <- downloadHandler(
       filename = "Blanks_sample.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(blank_bees(loaded_files$Sample_blanks))),file)
+          htmlwidgets::saveWidget(as_widget(blank_bees(loaded_files$Sample_blanks)),file)
       }
   )
   
   output$download_blank_bridge <- downloadHandler(
       filename = "Blanks_bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(blank_bees(loaded_files$Bridge_blanks))),file)
+          htmlwidgets::saveWidget(as_widget(blank_bees(loaded_files$Bridge_blanks)),file)
       }
   )
   
   ## TAB 4 ====
 
   output$DeltaT_Combined  <- renderPlotly({
-      remove_parenthesis_legend(
-          ggplotly(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge)))
+      remove_parenthesis_legend(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))
   })
   
   output$download_deltaT <- downloadHandler(
       filename = "DeltaT.html",
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_parenthesis_legend(
-              ggplotly(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge)))),file)
+             delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))),file)
       }
   )
   ## TAB 5 ====
@@ -355,54 +356,50 @@ server <- function(input, output, session) {
   ## TAB 6 ====
   
   output$KT3_Sample  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Sample_blanks)))
+      KT3_lineplot(loaded_files$Sample_blanks)
   })
   
   output$KT3_Bridge  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Bridge_blanks)))
+      KT3_lineplot(loaded_files$Bridge_blanks)
   })
   
   output$download_KT3_sample <- downloadHandler(
       filename = "KT3_Sample.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Sample_blanks)))),file)
+          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Sample_blanks)),file)
       }
   )
   
   output$download_KT3_bridge <- downloadHandler(
       filename = "KT3_Bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(ggplotly(KT3_lineplot(loaded_files$Bridge_blanks)))),file)
+          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Bridge_blanks)),file)
       }
   )
   
   ## TAB 7 ====
   
-  output$GST_Sample  <- renderPlot({
+  output$GST_Sample  <- renderPlotly({
       GST_violins(loaded_files$Sample)
   })
   
   output$GST_Bridge  <- renderPlotly({
       # TODO Only for now:
       bridge_data <- loaded_files$Bridge %>% filter(Gst.Tag<750)
-      ggplotly(GST_bees(bridge_data))
+      GST_bees(bridge_data)
   })
   
   output$download_GST_sample <- downloadHandler(
-      # filename = "GST_Sample.html",
-      # content = function(file) {
-      #     htmlwidgets::saveWidget(as_widget(ggplotly(GST_violins(loaded_files$Sample))),file)
-      # }
-      filename = "GST_Sample.png",
+      filename = "GST_Sample.html",
       content = function(file) {
-         ggsave(file, plot = GST_violins(loaded_files$Sample), device = "png", height = 10, width = 14)
+          htmlwidgets::saveWidget(as_widget(GST_violins(loaded_files$Sample)),file)
       }
   )
   
   output$download_GST_bridge <- downloadHandler(
       filename = "GST_Bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(GST_bees(loaded_files$Bridge))),file)
+          htmlwidgets::saveWidget(as_widget(GST_bees(loaded_files$Bridge)),file)
       }
   )
   
