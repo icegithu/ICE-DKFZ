@@ -19,11 +19,11 @@ library(ggbeeswarm) # for beeswarm
 
 # Set Working directories ======================================================
 
-SUMMARY_DIR = "./Combined_Output"
+SUMMARY_DIR = "./CKB/Combined_Output"
 RAW_DATA_DIR = "./CKB/"
 FUNCTIONS_DIR = "./R_functions"
-BRIDGE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_Bridging.xlsx"
-SAMPLE_INFO_FILE = "./CKB/Orga Studie/Plattenbelegungsplan_StudySamples.xlsx"
+BRIDGE_INFO_FILE = "./CKB/OrgaStudie/Plattenbelegungsplan_Bridging.xlsx"
+SAMPLE_INFO_FILE = "./CKB/OrgaStudie/Plattenbelegungsplan_StudySamples.xlsx"
 
 # Other Global variables ======================================================
 PLOT_HEIGHT = "300px"
@@ -71,7 +71,7 @@ ui <- fluidPage(
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
-                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T),
+                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
                        tags$h3("Mean Count Bridging"),
                        downloadButton("download_box_count_bridge", "Download Count Bridge"),
                        plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
@@ -100,7 +100,7 @@ ui <- fluidPage(
                        fluidRow(
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate_daywise"), inline=T)
+                              radioButtons("perplate_display","", c("Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id","Plate daywise" = "Plate_daywise"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
@@ -112,9 +112,9 @@ ui <- fluidPage(
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
-                       tags$h3("Sample Data"),
-                       downloadButton("download_KT3_sample", "Download Sample"),
-                       plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       # tags$h3("Sample Data"),
+                       # downloadButton("download_KT3_sample", "Download Sample"),
+                       # plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_KT3_bridge", "Download Bridge"),
                        plotlyOutput(outputId = "KT3_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
@@ -123,7 +123,7 @@ ui <- fluidPage(
                        tags$h2("GST"),
                        tags$h3("Sample Data"),
                        downloadButton("download_GST_sample", "Download Sample"),
-                       plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_GST_bridge", "Download Bridge"),
                        plotlyOutput(outputId = "GST_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
@@ -173,7 +173,7 @@ server <- function(input, output, session) {
     read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info)
     get_dates_to_load()
     load_data()
-    
+    update_calendar()
   })
   
   output$files_to_load_text <- renderText({ 
@@ -205,24 +205,6 @@ server <- function(input, output, session) {
       }
     }
 
-    ################################################################################
-    ### THIS IS ONLY UNTIL WE GET NEW GOOD Dummy data
-    ################################################################################
-    # Add KT-3 info (for now) to make those plots later
-    Bridge_df$Sample.id[Bridge_df$Sample.id == "AB_1"] <- "KT-3"
-    Bridge_df %>% filter(Sample.id == "KT-3")
-    Sample_df$Sample.id[Sample_df$Sample.id == "ABC123"| Sample_df$Sample.id == "DEF123"] <- "KT-3"
-    Sample_df %>% filter(Sample.id == "KT-3")
-    # Rename one analyte to GST tag
-    colnames(Bridge_df)[ncol(Bridge_df)] <- "GST_tag"
-    Bridge_df$GST_tag <- rnorm(n = nrow(Bridge_df), mean = 90, sd = 5)
-    
-    colnames(Sample_df)[ncol(Sample_df)] <- "GST_tag"
-    Sample_df$GST_tag <- rnorm(n = nrow(Sample_df), mean = 85, sd = 8)
-    
-    ################################################################################
-    ################################################################################
-    
     loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
     loaded_files$Bridge <- Bridge_df
     loaded_files$Bridge_blanks <- get_blanks_kt(Bridge_df) 
@@ -234,8 +216,8 @@ server <- function(input, output, session) {
   })
   
   update_calendar <- reactive({
-      # TODO: Connect the selection of this calender to the plot
-      highlightedDates  <- as.Date(dates_to_load$dates,format="%Y%m%d")
+      highlightedDates  <- as.Date(as.character(
+          sort(unique(c(loaded_files$Bridge$Date, loaded_files$Sample$Date)))),format="%Y%m%d")
       calendar_options <- data.frame(highlightedDates)
       
       updateAirDateInput(
@@ -279,11 +261,17 @@ server <- function(input, output, session) {
 
   ## TAB 2 ====
   output$Mean_Count_Bridging  <- renderPlotly({
-      ggplotly(mean_boxplots(loaded_files$Bridge_mm))
+      date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+      if (any(loaded_files$Bridge_mm$Date==date_as_number)){
+        ggplotly(mean_boxplots(loaded_files$Bridge_mm,date_as_number))
+      }
   })
 
   output$Mean_Count_Sample  <- renderPlotly({
-      ggplotly(mean_boxplots(loaded_files$Sample_mm))
+      date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+      if (any(loaded_files$Sample_mm$Date==date_as_number)){
+          ggplotly(mean_boxplots(loaded_files$Sample_mm,date_as_number))
+      }
   })
 
   output$download_box_count_bridge <- downloadHandler(
@@ -390,18 +378,24 @@ server <- function(input, output, session) {
   
   ## TAB 7 ====
   
-  output$GST_Sample  <- renderPlotly({
-      ggplotly(GST_bees(loaded_files$Sample))
+  output$GST_Sample  <- renderPlot({
+      GST_violins(loaded_files$Sample)
   })
   
   output$GST_Bridge  <- renderPlotly({
-      ggplotly(GST_bees(loaded_files$Bridge))
+      # TODO Only for now:
+      bridge_data <- loaded_files$Bridge %>% filter(Gst.Tag<750)
+      ggplotly(GST_bees(bridge_data))
   })
   
   output$download_GST_sample <- downloadHandler(
-      filename = "GST_Sample.html",
+      # filename = "GST_Sample.html",
+      # content = function(file) {
+      #     htmlwidgets::saveWidget(as_widget(ggplotly(GST_violins(loaded_files$Sample))),file)
+      # }
+      filename = "GST_Sample.png",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(GST_bees(loaded_files$Sample))),file)
+         ggsave(file, plot = GST_violins(loaded_files$Sample), device = "png", height = 10, width = 14)
       }
   )
   
