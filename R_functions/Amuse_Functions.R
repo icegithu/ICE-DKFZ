@@ -303,20 +303,21 @@ mean_boxplots <- function(df, selected_date = ""){
     # df <- sample_df_mm #debug
     # selected_date <- unique(df$Date)[1] #debug
     
-    # Makes no sense for this
     # TODO we might wanna use if missing so that if no date is specified we select all of them
     # if (selected_date == "") {}
+    
     df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date)
     
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
         geom_boxplot() + labs(x = "", y = "Mean Counts")
-    p <- ggplotly(Mean_box_plot)
-    p <- p %>% layout(annotations = list(list(showarrow = FALSE,yref = "paper",
-                                  y=0.9,text = paste("Showing data from", selected_date))))
-    return(p)
     
+    plotly_box <- ggplotly(Mean_box_plot) %>% 
+        layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
+                                       text = paste("Showing data from", selected_date))))
+    
+    return(plotly_box)
 }
 
 # Figure 3 – Blank MFI Boxplots =================================================
@@ -371,6 +372,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     delta_df1 <- df1 %>% 
         dplyr::select(Plate.id, Date, Delta_t) %>% 
         distinct()
+    
     # Subset data    
     delta_df2 <- df2 %>% 
         dplyr::select(Plate.id, Date, Delta_t) %>% 
