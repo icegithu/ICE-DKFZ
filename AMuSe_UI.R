@@ -80,7 +80,7 @@ ui <- fluidPage(
                        plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH),
 
               ),
-              tabPanel("Blank values",
+              tabPanel("Blank Values",
                        tags$h2("Blank Values"),
                        tags$h3("Sample Data"),
                        downloadButton("download_blank_sample", "Download Sample"),
@@ -109,6 +109,10 @@ ui <- fluidPage(
                        tags$h3("Median MFI"),
                        downloadButton("download_MFI_perplate_median", "Download Median"),
                        plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH),
+              ),
+              tabPanel("Control Plates",
+                       tags$h2("Control Plates")
+                  
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
