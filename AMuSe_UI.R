@@ -26,8 +26,8 @@ BRIDGE_INFO_FILE = "./CKB/OrgaStudie/Plattenbelegungsplan_Bridging.xlsx"
 SAMPLE_INFO_FILE = "./CKB/OrgaStudie/Plattenbelegungsplan_StudySamples.xlsx"
 
 # Other Global variables ======================================================
-PLOT_HEIGHT = "300px"
-PLOT_WIDTH = "700px"
+# PLOT_HEIGHT = "300px" we leave the height in automatic for the moment
+PLOT_WIDTH = "90%"
 source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 # Build UI =====================================================================
@@ -64,36 +64,36 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI Bridging data"),
-                       plotlyOutput(outputId = "Mean_MFI_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging", width = PLOT_WIDTH),
                        tags$h3("Median MFI Bridging data"),
                        downloadButton("download_MFI_bridge_median", "Download Median Plot"),
-                       plotlyOutput(outputId = "Median_MFI_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Median_MFI_Bridging", width = PLOT_WIDTH),
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
                        tags$h3("Mean Count Bridging"),
                        downloadButton("download_box_count_bridge", "Download Count Bridge"),
-                       plotlyOutput(outputId = "Mean_Count_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH),
                        tags$h3("Mean Count Sample"),
                        downloadButton("download_box_count_sample", "Download Count Sample"),
-                       plotlyOutput(outputId = "Mean_Count_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH),
 
               ),
               tabPanel("Blank values",
                        tags$h2("Blank Values"),
                        tags$h3("Sample Data"),
                        downloadButton("download_blank_sample", "Download Sample"),
-                       plotlyOutput(outputId = "Blank_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_blank_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "Blank_Bridging", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH),
               ),
               tabPanel("Temperature",
                        tags$h2("Temperature delta for Sample and Bridging Data"),
                        tags$h3("Combined Data"),
                        downloadButton("download_deltaT", "Download"),
-                       plotlyOutput(outputId = "DeltaT_Combined", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH),
               ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
@@ -105,28 +105,25 @@ ui <- fluidPage(
                        ),
                        tags$h3("Mean MFI"),
                        downloadButton("download_MFI_perplate_mean", "Download Mean"),
-                       plotlyOutput(outputId = "Mean_MFI_perplate", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_MFI_perplate", width = PLOT_WIDTH),
                        tags$h3("Median MFI"),
                        downloadButton("download_MFI_perplate_median", "Download Median"),
-                       plotlyOutput(outputId = "Median_MFI_perplate", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH),
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
-                       # tags$h3("Sample Data"),
-                       # downloadButton("download_KT3_sample", "Download Sample"),
-                       # plotlyOutput(outputId = "KT3_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_KT3_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "KT3_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
+                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH), 
               ),
               tabPanel("GST Plot",
                        tags$h2("GST"),
                        tags$h3("Sample Data"),
                        downloadButton("download_GST_sample", "Download Sample"),
-                       plotlyOutput(outputId = "GST_Sample", height = PLOT_HEIGHT, width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH),
                        tags$h3("Bridging Data"),
                        downloadButton("download_GST_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "GST_Bridge", height = PLOT_HEIGHT, width = PLOT_WIDTH), 
+                       plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH), 
               ),
               
   )
@@ -354,21 +351,9 @@ server <- function(input, output, session) {
   )
   
   ## TAB 6 ====
-  
-  output$KT3_Sample  <- renderPlotly({
-      KT3_lineplot(loaded_files$Sample_blanks)
-  })
-  
   output$KT3_Bridge  <- renderPlotly({
       KT3_lineplot(loaded_files$Bridge_blanks)
   })
-  
-  output$download_KT3_sample <- downloadHandler(
-      filename = "KT3_Sample.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Sample_blanks)),file)
-      }
-  )
   
   output$download_KT3_bridge <- downloadHandler(
       filename = "KT3_Bridge.html",
