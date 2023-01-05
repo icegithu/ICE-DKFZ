@@ -392,7 +392,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
         geom_hline(yintercept = 0, linetype = "longdash")+
         labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
-    return(fix_jpeg_download(ggplotly(plot),"Temperature_plot"))
+    return(fix_jpeg_download(ggplotly(plot),"Temperature_plot","short"))
 }
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
@@ -466,7 +466,7 @@ KT3_lineplot <- function(df){
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
-    return(fix_jpeg_download(remove_hover_duplicate(ggplotly(plot)),"KT3_Plot"))
+    return(fix_jpeg_download(remove_hover_duplicate(ggplotly(plot)),"KT3_Plot","short"))
     
 }    
 
@@ -545,11 +545,20 @@ remove_parenthesis_legend <- function(p){
     return(p)
 }
 
-fix_jpeg_download <- function(p, filename){
+fix_jpeg_download <- function(p, filename, size = "long"){
+    if (size=="short"){
+        p <- p%>% config(toImageButtonOptions = list(format= 'jpeg', 
+                                                     filename= filename,
+                                                     height= 800,
+                                                     width= 800,
+                                                     scale= 1 ))
+    }
+    else{
     p <- p%>% config(toImageButtonOptions = list(format= 'jpeg', 
                                                  filename= filename,
-                                                 height= 800,
-                                                 width= 1100,
+                                                 height= 500,
+                                                 width= 1000,
                                                  scale= 1 ))
+    }
     return(p)
 }
