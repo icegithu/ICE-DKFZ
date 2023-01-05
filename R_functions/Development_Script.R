@@ -16,7 +16,7 @@ library("tidyverse")
 library("plotly")
 
 # Path to the input data for
-path <- "C:/DKFZ Project Amuse/CKB/"
+path <- "C:/DKFZ Project Amuse/Test CKB/"
 # setwd(path)
 # list.files(recursive = T)
 
@@ -34,18 +34,18 @@ head(Bridge_info_file)
 source('C:/Users/GK/Documents/R_Projects/ICE-DKFZ/R_functions/Amuse_Functions.R')
 
 # update input data
-# read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
-# read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
+read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
+read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
 
 # Read in sample data for plotting
 list.files(paste0(path,"Combined_Output"))
-
-sample_data <- read.csv(paste0(path,"Combined_Output/Sample_data_Week_1_20210520-20210523.csv"))
+sample_data <- read.csv(paste0(path,"Combined_Output/Sample_data_Woche1_20210512-20210515.csv"))
 sum(is.na(sample_data$Sample.id))
 head(sample_data)
 
 # Read in bridging data for plotting
-bridge_data <- read.csv(paste0(path, "Combined_Output/Bridging_data_Week_1_20210520-20210523.csv"))
+list.files(paste0(path,"Combined_Output"))
+bridge_data <- read.csv(paste0(path, "Combined_Output/Bridging_data_Woche1_20210512-20210515.csv"))
 # Fix nas
 bridge_data$Sample.id[is.na(bridge_data$Sample.id)] <- "empty"
 head(bridge_data)
@@ -77,7 +77,7 @@ sample_blanks_kt <- get_blanks_kt(sample_data)
 bridge_blanks_kt <- get_blanks_kt(bridge_data)
 
 # Bridging and Sample data
-blank_bees(sample_blanks_kt)
+blank_violins(sample_blanks_kt)
 blank_bees(bridge_blanks_kt)
 
 # Figure 4 – Delta-T Dotplots ==================================================
@@ -95,7 +95,9 @@ x_axis <- "Week"
 x_axis <- "Plate_daywise"
 x_axis <- "Plate.id"
 
-Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis)
+log_toggle <- T
+
+Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis, log_toggle)
 do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
 
 # Figure 6 – KT-3 dotplots =====================================================
