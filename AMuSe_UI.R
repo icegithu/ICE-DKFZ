@@ -234,7 +234,7 @@ server <- function(input, output, session) {
   
   ## TAB 1 ====
   output$Mean_MFI_Bridging  <- renderPlotly({
-      fix_png_download(
+      fix_jpeg_download(
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                          input$log_linear)[["Mean"]])),"MFI_bridge_mean") 
   })
@@ -248,7 +248,7 @@ server <- function(input, output, session) {
   )
 
   output$Median_MFI_Bridging  <- renderPlotly({
-      fix_png_download(
+      fix_jpeg_download(
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                           input$log_linear)[["Median"]])),"MFI_bridge_median")
   })
