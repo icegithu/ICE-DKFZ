@@ -317,7 +317,7 @@ mean_boxplots <- function(df, selected_date = ""){
         layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
                                        text = paste("Showing data from", selected_date))))
     
-    return(fix_jpeg_download(plotly_box),"Counts")
+    return(fix_jpeg_download(plotly_box,"Counts"))
 }
 
 # Figure 3 – Blank MFI Boxplots =================================================
