@@ -27,7 +27,8 @@ SAMPLE_INFO_FILE = "./CKB/OrgaStudie/Plattenbelegungsplan_StudySamples.xlsx"
 
 # Other Global variables ======================================================
 # PLOT_HEIGHT = "300px" we leave the height in automatic for the moment
-PLOT_WIDTH = "90%"
+PLOT_WIDTH_LONG = "90%"
+PLOT_WIDTH_SHORT = "60%"
 source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 # Build UI =====================================================================
@@ -64,36 +65,36 @@ ui <- fluidPage(
                            )
                        ),
                        tags$h3("Mean MFI Bridging data"),
-                       plotlyOutput(outputId = "Mean_MFI_Bridging", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_MFI_Bridging", width = PLOT_WIDTH_LONG),
                        tags$h3("Median MFI Bridging data"),
                        downloadButton("download_MFI_bridge_median", "Download Median Plot"),
-                       plotlyOutput(outputId = "Median_MFI_Bridging", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Median_MFI_Bridging", width = PLOT_WIDTH_LONG),
               ),
               tabPanel("Counts",
                        tags$h2("Box plots of Sample and Bridging Data"),
                        airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
                        tags$h3("Mean Count Bridging"),
                        downloadButton("download_box_count_bridge", "Download Count Bridge"),
-                       plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH_LONG),
                        tags$h3("Mean Count Sample"),
                        downloadButton("download_box_count_sample", "Download Count Sample"),
-                       plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH_LONG),
 
               ),
               tabPanel("Blank Values",
                        tags$h2("Blank Values"),
                        tags$h3("Sample Data"),
                        downloadButton("download_blank_sample", "Download Sample"),
-                       plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH_LONG),
                        tags$h3("Bridging Data"),
                        downloadButton("download_blank_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH_LONG),
               ),
               tabPanel("Temperature",
                        tags$h2("Temperature delta for Sample and Bridging Data"),
                        tags$h3("Combined Data"),
                        downloadButton("download_deltaT", "Download"),
-                       plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH_SHORT),
               ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
@@ -105,10 +106,10 @@ ui <- fluidPage(
                        ),
                        tags$h3("Mean MFI"),
                        downloadButton("download_MFI_perplate_mean", "Download Mean"),
-                       plotlyOutput(outputId = "Mean_MFI_perplate", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Mean_MFI_perplate", width = PLOT_WIDTH_LONG),
                        tags$h3("Median MFI"),
                        downloadButton("download_MFI_perplate_median", "Download Median"),
-                       plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH_LONG),
               ),
               tabPanel("Control Plates",
                        tags$h2("Control Plates")
@@ -118,16 +119,16 @@ ui <- fluidPage(
                        tags$h2("KT3"),
                        tags$h3("Bridging Data"),
                        downloadButton("download_KT3_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH), 
+                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT), 
               ),
               tabPanel("GST Plot",
                        tags$h2("GST"),
                        tags$h3("Sample Data"),
                        downloadButton("download_GST_sample", "Download Sample"),
-                       plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH),
+                       plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH_LONG),
                        tags$h3("Bridging Data"),
                        downloadButton("download_GST_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH), 
+                       plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH_LONG), 
               ),
               
   )
