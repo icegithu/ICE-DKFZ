@@ -43,12 +43,14 @@ ui <- fluidPage(
               tabPanel("Load Files",
                        tags$div(tags$p()),
                        fluidRow(
-                          column(4, airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1)),
-                          # column(2, airDatepickerInput("daterange", "Select a date range:", range = T)),
+                          column(4, tags$div(tags$p()),
+                                 actionButton("create_summaries", "Update files"), 
+                                 tags$div(tags$p()),
+                                 verbatimTextOutput("files_created_text"),
+                                 tags$div(tags$p()),
+                                 airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1)),
                           column(4, align = "left", 
                                  verbatimTextOutput("files_to_load_text"),
-                                 tags$h5("If your desire summary doesn't appear, click update"),
-                                 actionButton("create_summaries", "Update"),     
                           ),
                        ),
                        actionButton("load_button", "Load"),
@@ -160,6 +162,7 @@ server <- function(input, output, session) {
   # Reactive containers ====
   loaded_files <- reactiveValues()
   dates_to_load <- reactiveValues()
+  created_files <- reactiveValues()
 
   # Button observing functions ====
   observeEvent(input$load_button, {
@@ -173,9 +176,8 @@ server <- function(input, output, session) {
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
     read_in_sample_data(paste0(RAW_DATA_DIR), sample_info)
     read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info)
-    get_dates_to_load()
-    load_data()
-    update_calendar()
+    #temporary until we get as output the updated files
+    created_files$files <- list.files(SUMMARY_DIR)
   })
   
   output$files_to_load_text <- renderText({ 
@@ -186,7 +188,18 @@ server <- function(input, output, session) {
                  collapse = "\n"
                  ))}
       else{
-          "No files found"
+          "No files loaded"
+      }})
+  
+  output$files_created_text <- renderText({ 
+      if (length(created_files$files)>0){
+          paste0("The following files were created or updated:\n",
+                 paste0(
+                     created_files$files,
+                     collapse = "\n"
+                 ))}
+      else{
+          "  "
       }})
   
   load_data <- reactive({
