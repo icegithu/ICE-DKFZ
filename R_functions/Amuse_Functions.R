@@ -317,7 +317,7 @@ mean_boxplots <- function(df, selected_date = ""){
         layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
                                        text = paste("Showing data from", selected_date))))
     
-    return(plotly_box)
+    return(fix_png_donwload(plotly_box),"Counts")
 }
 
 # Figure 3 – Blank MFI Boxplots =================================================
@@ -355,7 +355,7 @@ blank_bees <- function(df){
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
         geom_beeswarm() + labs(color = "Plate.ID", x = "")
     
-    return(ggplotly(plot))
+    return(fix_png_donwload(ggplotly(plot),"blanks"))
     
 }    
 
@@ -392,7 +392,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
         geom_hline(yintercept = 0, linetype = "longdash")+
         labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
     
-    return(ggplotly(plot))
+    return(fix_png_download(ggplotly(plot),"Temperature_plot"))
 }
 
 # Figure 5 – Mean and Median MFI per plate Lineplots ===========================
@@ -466,7 +466,7 @@ KT3_lineplot <- function(df){
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
-    return(remove_hover_duplicate(ggplotly(plot)))
+    return(fix_png_download(remove_hover_duplicate(ggplotly(plot)),"KT3_Plot"))
     
 }    
 
@@ -484,7 +484,7 @@ GST_bees <- function(df){
         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
     
-    return(ggplotly(plot))
+    return(fix_png_download(ggplotly(plot),"GST_Bridge"))
     
 }    
 
@@ -507,7 +507,7 @@ GST_violins <- function(df){
         theme(strip.background = element_blank(), 
               strip.text.x = element_text(size = rel(1.3)))
     
-    return(ggplotly(plot))
+    return(fix_png_download(ggplotly(plot),"GST_Sample"))
     
 }    
 
@@ -545,4 +545,11 @@ remove_parenthesis_legend <- function(p){
     return(p)
 }
 
-
+fix_png_download <- function(p, filename){
+    p <- p%>% config(toImageButtonOptions = list(format= 'png', 
+                                                 filename= filename,
+                                                 height= 800,
+                                                 width= 1100,
+                                                 scale= 1 ))
+    return(p)
+}
