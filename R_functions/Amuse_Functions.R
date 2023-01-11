@@ -315,7 +315,7 @@ mean_median_lineplots <- function(df, log_toggle){
         ungroup() %>% 
         mutate(across(c(Date, Analyte), factor))
     
-    df$Analyte <- fct_relevel(df$Analyte, c("Gst.Tag"), after = Inf)
+    df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
     out_list <- list()
     # Draw median MFI lineplot
@@ -360,7 +360,11 @@ mean_boxplots <- function(df, selected_date = ""){
     # TODO we might wanna use if missing so that if no date is specified we select all of them
     # if (selected_date == "") {}
     
-    df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date)
+    df <- df %>% filter(Analyte != "Total Events" & Date == selected_date) %>%
+        ungroup() %>%
+        mutate(across(c(Date, Analyte), factor))
+    
+    df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
     # Draw Mean Boxes
     Mean_box_plot <-
@@ -378,7 +382,7 @@ mean_boxplots <- function(df, selected_date = ""){
 # Bridging and Sample data
 
 # get blank and KT-3 samples only. Works on both Sample and Bridging data
-get_blanks_kt <- function(df){
+get_controls <- function(df){
     
     # df <- sample_data # debug
     
@@ -388,10 +392,13 @@ get_blanks_kt <- function(df){
     head(df)
     
     final_df <- 
-        df %>% filter(grepl("blank|KT3", Sample.id) & Data_type == "MFI") %>% 
+        df %>% filter(grepl("blank|KT3|Plattenkontrolle", Sample.id) & Data_type == "MFI") %>% 
         select(Plate.id, Date, Well, Sample.id, matches(analyte_cols)) %>%
-        pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>% 
-        filter(Analyte != "Total.Events")
+        pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
+        ungroup() %>%
+        mutate(across(c(Date, Analyte), factor))
+    
+    final_df$Analyte <- fct_relevel(final_df$Analyte, c("Gst Tag", "Total Events"), after = Inf)
     
     return(final_df)
     
@@ -399,13 +406,10 @@ get_blanks_kt <- function(df){
 
 blank_violins <- function(df){
     
-    # df <- sample_blanks_kt # debug
+    # df <- sample_controls # debug
+    head(df)
     
-    df <- df %>% filter(Sample.id == "blank")
-    df$Plate.id <- factor(df$Plate.id)
-    df$Analyte <- factor(df$Analyte)
-    df$Analyte <- fct_relevel(df$Analyte, c("Gst.Tag"), after = Inf)
-    
+    df <- df %>% filter(Sample.id == "blank" & Analyte != "Total Events")
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI))+#, text = paste("Plate.ID", Plate.id))) + 
@@ -421,15 +425,12 @@ blank_violins <- function(df){
 # Draw the blank boxplots function
 blank_bees <- function(df){
     
-    # df <- bridge_blanks_kt # debug
-    df <- df %>% filter(Sample.id == "blank")
-    df$Plate.id <- as.character(df$Plate.id)
-    df$Analyte <- factor(df$Analyte)
-    df$Analyte <- fct_relevel(df$Analyte, c("Gst.Tag"), after = Inf)
+    # df <- bridge_controls # debug
+    df <- df %>% filter(Sample.id == "blank", Analyte != "Total Events")
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
-        geom_beeswarm() + 
+        geom_beeswarm(dodge.width = 0.4) + 
         labs(color = "Plate.ID", x = "")
     
     return(fix_jpeg_download(ggplotly(plot), "blanks"))
@@ -472,7 +473,32 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     return(fix_jpeg_download(ggplotly(plot),"Temperature_plot","short"))
 }
 
-# Figure 5 – Mean and Median MFI per plate Lineplots ===========================
+# Figure 5 – Plate control line plots ==========================================
+
+plate_control_plots <- function(df){
+    
+    # df <- sample_controls # debug
+    
+    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & Analyte != "Total Events")
+    # head(df)
+    
+    out_list <- list()
+    
+    for (i in unique(df$Sample.id)) {
+        
+        temp_df <- df %>% filter(Sample.id == i)
+        
+        out_list[[i]] <-
+            ggplot(temp_df, aes(x = Plate.id, y = MFI, color = Analyte, group = Analyte, text = Date)) +
+            geom_line(linewidth = 1) + geom_point() + 
+            scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
+            labs(x = "", y = "MFI")
+    }
+    
+    return(out_list)
+}
+
+# Figure 6 – Mean and Median MFI per plate Lineplots ===========================
 # get mean and median per plate function.
 
 get_mean_median_per_plate <- function(df){
@@ -501,7 +527,7 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis, log_toggle = F){
     
     # df <- sample_df_mm_per_plate # Debug
     
-    df <- df %>% ungroup() %>% filter(Analyte != "Total.Events") %>% 
+    df <- df %>% ungroup() %>% filter(Analyte != "Total Events") %>% 
         mutate(across(c(Date, Plate_daywise), factor))
     
     out_list <- list()
@@ -540,18 +566,15 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis, log_toggle = F){
     
 }
 
-# Figure 6 – KT-3 Lineplots ====================================================
+# Figure 7 – KT-3 Lineplots ====================================================
 # TODO Will need a Mean over plate.id/date probably
 
 # Draw the KT-3 pointplots function
 KT3_lineplot <- function(df){
     
-    # df <- sample_blanks_kt # debug
+    # df <- bridge_controls # debug
     
     df <- df %>% filter(Sample.id == "KT3")# %>%
-    df$Date <- factor(df$Date)
-    df$Analyte <- factor(df$Analyte)
-    df$Analyte <- fct_relevel(df$Analyte, "Gst.Tag", after = Inf)
     
     plot <-
         ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
@@ -563,7 +586,7 @@ KT3_lineplot <- function(df){
     
 }    
 
-# Figure 7 – GST Beeswarm ======================================================
+# Figure 8 – GST Beeswarm ======================================================
 # Draw the GST bees function
 GST_bees <- function(df){
     
@@ -572,7 +595,7 @@ GST_bees <- function(df){
     df <- df %>% filter(Data_type == "MFI")
     df$Plate.id <- as.character(df$Plate.id)
     df$Date <- factor(df$Date)
-    
+
     plot <-
         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
@@ -588,12 +611,15 @@ findoutlier <- function(x) {
 GST_violins <- function(df){
     
     # df <- sample_data # debug
+    # head(df)
     
-    df <- df %>% filter(Data_type == "MFI") %>%
+    df <-
+        df %>% filter(Data_type == "MFI") %>% 
+        rename_all(recode, "Gst Tag" = "Gst.Tag") %>%
         mutate(outlier = ifelse(findoutlier(Gst.Tag), Well, NA)) %>% 
         mutate(across(c(Plate.id, Plate_daywise, Date), factor))
     
-    head(df)
+    # head(df)
     
     plot <-
         ggplot(df, aes(x = Plate_daywise, y = Gst.Tag, fill = Plate_daywise, text = paste("Plate.ID", Plate.id))) + 
