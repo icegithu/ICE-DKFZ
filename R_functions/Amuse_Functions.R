@@ -294,6 +294,8 @@ get_mean_median <- function(df){
                   Median = median(Value,  na.rm = T)) %>% 
         pivot_wider(names_from = Data_type, values_from = c(Mean, Median))
     
+    final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
+    
     return(final_df)
     
 }
@@ -313,7 +315,7 @@ mean_median_lineplots <- function(df, log_toggle){
     
     df <- df %>% filter(Analyte != "Total.Events") %>% 
         ungroup() %>% 
-        mutate(across(c(Date, Analyte), factor))
+        mutate(across(c(Date), factor))
     
     df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
@@ -364,12 +366,14 @@ mean_boxplots <- function(df, selected_date = ""){
         ungroup() %>%
         mutate(across(c(Date, Analyte), factor))
     
-    df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
+    # df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() + labs(x = "", y = "Mean Counts")
+        geom_boxplot() + labs(x = "", y = "Mean Counts") +
+        geom_hline(yintercept = 80, linetype = "longdash", color = "red") +
+        geom_hline(yintercept = 100, linetype = "longdash", color = "orange")
     
     plotly_box <- ggplotly(Mean_box_plot) %>% 
         layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
@@ -398,7 +402,9 @@ get_controls <- function(df){
         ungroup() %>%
         mutate(across(c(Date, Analyte), factor))
     
-    final_df$Analyte <- fct_relevel(final_df$Analyte, c("Gst Tag", "Total Events"), after = Inf)
+    final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
+    
+    # final_df$Analyte <- fct_relevel(final_df$Analyte, c("Gst Tag", "Total Events"), after = Inf)
     
     return(final_df)
     
@@ -422,15 +428,29 @@ blank_violins <- function(df){
     
 }    
 
-# Draw the blank boxplots function
 blank_bees <- function(df){
+    
+    # df <- sample_controls # debug
+    df <- df %>% filter(Sample.id == "blank", Analyte != "Total Events")
+    
+    plot <-
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
+        geom_beeswarm(dodge.width = 0.4) + 
+        labs(color = "Plate.ID", x = "")
+    
+    return(fix_jpeg_download(ggplotly(plot), "blanks"))
+    
+}    
+
+blank_lines <- function(df){
     
     # df <- bridge_controls # debug
     df <- df %>% filter(Sample.id == "blank", Analyte != "Total Events")
     
     plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id)) + 
-        geom_beeswarm(dodge.width = 0.4) + 
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
+        geom_line(linewidth = 1) + 
+        geom_point() + 
         labs(color = "Plate.ID", x = "")
     
     return(fix_jpeg_download(ggplotly(plot), "blanks"))
@@ -481,6 +501,7 @@ plate_control_plots <- function(df){
     
     df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & Analyte != "Total Events")
     # head(df)
+    df$Analyte
     
     out_list <- list()
     
@@ -517,6 +538,8 @@ get_mean_median_per_plate <- function(df){
         group_by(Plate.id, Date, Week, Plate_daywise, Analyte) %>% 
         summarise(Mean_MFI = mean(MFI),
                   Median_MFI = median(MFI))
+    
+    final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
     
     return(final_df)
     
@@ -595,7 +618,7 @@ GST_bees <- function(df){
     df <- df %>% filter(Data_type == "MFI")
     df$Plate.id <- as.character(df$Plate.id)
     df$Date <- factor(df$Date)
-
+    
     plot <-
         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
