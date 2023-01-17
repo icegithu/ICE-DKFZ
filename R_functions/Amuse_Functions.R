@@ -19,7 +19,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         (to_read_in_weeks <- available_weeks)
     } else {
         to_read_in_weeks <- available_weeks[!grepl(paste(existing_weeks, collapse = "|") , available_weeks)]
-        (to_read_in_weeks <- c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)]))
+        (to_read_in_weeks <- unique(c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)])))
     }
     
     
@@ -159,7 +159,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
         (to_read_in_weeks <- available_weeks)
     } else {
         to_read_in_weeks <- available_weeks[!grepl(paste(existing_weeks, collapse = "|") , available_weeks)]
-        (to_read_in_weeks <- c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)]))
+        (to_read_in_weeks <- unique(c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)])))
     }
     
     for (week in seq_along(to_read_in_weeks)) {
