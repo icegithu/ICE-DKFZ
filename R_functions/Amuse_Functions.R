@@ -453,7 +453,7 @@ blank_violins <- function(df){
     # df <- sample_controls # debug
     head(df)
     
-    df <- df %>% filter(Sample.id == "blank" & Analyte != "Total Events")
+    df <- df %>% filter(Sample.id == "blank" & Analyte != "Total.Events")
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI))+#, text = paste("Plate.ID", Plate.id))) + 
@@ -469,7 +469,7 @@ blank_violins <- function(df){
 blank_bees <- function(df){
     
     # df <- sample_controls # debug
-    df <- df %>% filter(Sample.id == "blank", Analyte != "Total Events")
+    df <- df %>% filter(Sample.id == "blank", Analyte != "Total.Events")
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
@@ -483,7 +483,7 @@ blank_bees <- function(df){
 blank_lines <- function(df){
     
     # df <- bridge_controls # debug
-    df <- df %>% filter(Sample.id == "blank", Analyte != "Total Events")
+    df <- df %>% filter(Sample.id == "blank", Analyte != "Total.Events")
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
@@ -537,7 +537,7 @@ plate_control_plots <- function(df){
     
     # df <- sample_controls # debug
     
-    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & Analyte != "Total Events")
+    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & Analyte != "Total.Events")
     # head(df)
     df$Analyte
     
@@ -588,7 +588,7 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis, log_toggle = F){
     
     # df <- sample_df_mm_per_plate # Debug
     
-    df <- df %>% ungroup() %>% filter(Analyte != "Total Events") %>% 
+    df <- df %>% ungroup() %>% filter(Analyte != "Total.Events") %>% 
         mutate(across(c(Date, Plate_daywise), factor))
     
     out_list <- list()
