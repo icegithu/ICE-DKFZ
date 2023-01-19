@@ -400,7 +400,7 @@ mean_boxplots <- function(df, selected_date = ""){
     # TODO we might wanna use if missing so that if no date is specified we select all of them
     # if (selected_date == "") {}
     
-    df <- df %>% filter(Analyte != "Total Events" & Date == selected_date) %>%
+    df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date) %>%
         ungroup() %>%
         mutate(across(c(Date, Analyte), factor))
     
