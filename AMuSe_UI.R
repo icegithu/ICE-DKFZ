@@ -196,8 +196,16 @@ server <- function(input, output, session) {
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
     read_in_sample_data(paste0(RAW_DATA_DIR), sample_info)
     read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info)
-    #temporary until we get as output the updated files
-    created_files$files <- list.files(SUMMARY_DIR)
+    updated_files <- c()
+    #get list of files that where modified in the last 10 min 
+    for (file in list.files(SUMMARY_DIR)){
+        if(difftime(Sys.time() , file.info(paste0(SUMMARY_DIR,"/",file))$mtime, units = "mins") < 10){
+            updated_files <- c(updated_files,file)
+        }
+    }
+    
+    
+    created_files$files <- updated_files
   })
   
   output$files_to_load_text <- renderText({ 
