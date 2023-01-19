@@ -97,9 +97,34 @@ ui <- fluidPage(
                        downloadButton("download_deltaT", "Download"),
                        plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH_SHORT),
               ),
+              tabPanel("Control Plates",
+                       tags$h2("Control Plates"),
+                       tags$h3("Bridging Data"),
+                       fluidRow(
+                           column(2, downloadButton("download_bridge_control_1", "Download Bridge 1"),),
+                           column(2, downloadButton("download_bridge_control_2", "Download Bridge 2"),),
+                           column(2, downloadButton("download_bridge_control_3", "Download Bridge 3"),)
+                       ),
+                       plotlyOutput(outputId = "bridge_control_1", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "bridge_control_2", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "bridge_control_3", width = PLOT_WIDTH_LONG),
+                       tags$div(tags$p()),
+                       tags$div(tags$p()),
+                       tags$h3("Sample Data"),
+                       fluidRow(
+                           column(2, downloadButton("download_sample_control_1", "Download Sample 1"),),
+                           column(2, downloadButton("download_sample_control_2", "Download Sample 2"),),
+                           column(2, downloadButton("download_sample_control_3", "Download Sample 3"),)
+                       ),
+                       plotlyOutput(outputId = "sample_control_1", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "sample_control_2", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "sample_control_3", width = PLOT_WIDTH_LONG),
+              ),
               tabPanel("MFI Sample",
                        tags$h2("Line plots for MFI per plate"),
                        fluidRow(
+                           column(2,div(id='my_log', materialSwitch(inputId = "mm_log_toggle", value = F,
+                                                                    status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
                               radioButtons("perplate_display","", c("Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id","Plate daywise" = "Plate_daywise"), inline=T)
@@ -111,10 +136,6 @@ ui <- fluidPage(
                        tags$h3("Median MFI"),
                        downloadButton("download_MFI_perplate_median", "Download Median"),
                        plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH_LONG),
-              ),
-              tabPanel("Control Plates",
-                       tags$h2("Control Plates")
-                  
               ),
               tabPanel("KT3 Plot",
                        tags$h2("KT3"),
@@ -221,11 +242,11 @@ server <- function(input, output, session) {
 
     loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
     loaded_files$Bridge <- Bridge_df
-    loaded_files$Bridge_blanks <- get_blanks_kt(Bridge_df) 
+    loaded_files$Bridge_controls <- get_controls(Bridge_df) 
     loaded_files$Sample_mm <- get_mean_median(Sample_df)
     loaded_files$Sample <- Sample_df
     loaded_files$Sample_mm_per_plate <- get_mean_median_per_plate(Sample_df)
-    loaded_files$Sample_blanks <- get_blanks_kt(Sample_df) 
+    loaded_files$Sample_controls <- get_controls(Sample_df) 
 
   })
   
@@ -245,7 +266,7 @@ server <- function(input, output, session) {
 
   # Call_plotting functions ====
   
-  ## TAB 1 ====
+  ## TAB 1 Bridging Data====
   output$Mean_MFI_Bridging  <- renderPlotly({
       fix_jpeg_download(
       remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
@@ -275,7 +296,7 @@ server <- function(input, output, session) {
       }
   )
 
-  ## TAB 2 ====
+  ## TAB 2 Mean Count box plots====
   output$Mean_Count_Bridging  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
       if (any(loaded_files$Bridge_mm$Date==date_as_number)){
@@ -306,31 +327,31 @@ server <- function(input, output, session) {
       }
   )
   
-  ## TAB 3 ====
+  ## TAB 3 Blanks ====
   
   output$Blank_Sample  <- renderPlotly({
-      blank_bees(loaded_files$Sample_blanks)
+      blank_violins(loaded_files$Sample_controls)
   })
 
   output$Blank_Bridging  <- renderPlotly({
-      blank_bees(loaded_files$Bridge_blanks)
+      blank_lines(loaded_files$Bridge_controls)
   })
   
   output$download_blank_sample <- downloadHandler(
       filename = "Blanks_sample.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(blank_bees(loaded_files$Sample_blanks)),file)
+          htmlwidgets::saveWidget(as_widget(blank_violins(loaded_files$Sample_controls)),file)
       }
   )
   
   output$download_blank_bridge <- downloadHandler(
       filename = "Blanks_bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(blank_bees(loaded_files$Bridge_blanks)),file)
+          htmlwidgets::saveWidget(as_widget(blank_lines(loaded_files$Bridge_controls)),file)
       }
   )
   
-  ## TAB 4 ====
+  ## TAB 4 Temperature====
 
   output$DeltaT_Combined  <- renderPlotly({
       remove_parenthesis_legend(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))
@@ -343,21 +364,90 @@ server <- function(input, output, session) {
              delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))),file)
       }
   )
-  ## TAB 5 ====
+  
+  ## TAB 5 Control plates====
+  
+  output$bridge_control_1  <- renderPlotly({
+     ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]])
+  })
+  
+  output$download_bridge_control_1  <- downloadHandler(
+      filename = "Bridge_control_1.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]])),file)
+      }
+  )
+  
+  output$bridge_control_2  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]])
+  })
+  
+  output$download_bridge_control_2  <- downloadHandler(
+      filename = "Bridge_control_2.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]])),file)
+      }
+  )
+  
+  output$bridge_control_3  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]])
+  })
+  
+  output$download_bridge_control_3  <- downloadHandler(
+      filename = "Bridge_control_3.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]])),file)
+      }
+  )
+  
+  output$sample_control_1  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]])
+  })
+  
+  output$download_sample_control_1  <- downloadHandler(
+      filename = "Sample_control_1.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]])),file)
+      }
+  )
+  
+  output$sample_control_2  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]])
+  })
+  
+  output$download_sample_control_2  <- downloadHandler(
+      filename = "Sample_control_2.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]])),file)
+      }
+  )
+  
+  output$sample_control_3  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]])
+  })
+  
+  output$download_sample_control_3  <- downloadHandler(
+      filename = "Sample_control_3.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]])),file)
+      }
+  )
+  
+  ## TAB 6 Sample MM ====
   
   output$Mean_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Mean"]]))
+      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))
   })
 
   output$Median_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Median"]]))
+      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))
   })
   
   output$download_MFI_perplate_mean <- downloadHandler(
       filename = paste0("MFI",input$perplate_display,"_mean.html"),
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Mean"]]))),file)
+              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))),file)
       }
   )
   
@@ -365,23 +455,23 @@ server <- function(input, output, session) {
       filename = paste0("MFI",input$perplate_display,"_median.html"),
       content = function(file) {
           htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display)[["Median"]]))),file)
+              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))),file)
       }
   )
   
-  ## TAB 6 ====
+  ## TAB 7 KT3 ====
   output$KT3_Bridge  <- renderPlotly({
-      KT3_lineplot(loaded_files$Bridge_blanks)
+      KT3_lineplot(loaded_files$Bridge_controls)
   })
   
   output$download_KT3_bridge <- downloadHandler(
       filename = "KT3_Bridge.html",
       content = function(file) {
-          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Bridge_blanks)),file)
+          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Bridge_controls)),file)
       }
   )
   
-  ## TAB 7 ====
+  ## TAB 8 GST====
   
   output$GST_Sample  <- renderPlotly({
       GST_violins(loaded_files$Sample)
