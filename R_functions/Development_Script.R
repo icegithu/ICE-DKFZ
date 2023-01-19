@@ -16,7 +16,7 @@ library("tidyverse")
 library("plotly")
 
 # Path to the input data for
-path <- "C:/DKFZ Project Amuse/CKB/"
+path <- "C:/DKFZ Project Amuse/Test CKB/"
 # setwd(path)
 # list.files(recursive = T)
 
@@ -34,18 +34,28 @@ head(Bridge_info_file)
 source('C:/Users/GK/Documents/R_Projects/ICE-DKFZ/R_functions/Amuse_Functions.R')
 
 # update input data
-# read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
-# read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
+read_in_sample_data(path_to_file = path, Sample_info_file = Sample_info_file)
+read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
 
 # Read in sample data for plotting
 list.files(paste0(path,"Combined_Output"))
+(selected_samples_files <- list.files(path = paste0(path,"Combined_Output"), pattern = "Sample", full.names = T))
+selected_samples_files <- selected_samples_files[2] # for now for better compatibility with dummy data
 
-sample_data <- read.csv(paste0(path,"Combined_Output/Sample_data_Week_1_20210520-20210523.csv"))
-sum(is.na(sample_data$Sample.id))
-head(sample_data)
+# Read in and bind rows
+sample_data <- selected_samples_files %>% 
+    lapply(read_csv) %>% 
+    bind_rows
 
 # Read in bridging data for plotting
-bridge_data <- read.csv(paste0(path, "Combined_Output/Bridging_data_Week_1_20210520-20210523.csv"))
+list.files(paste0(path,"Combined_Output"))
+(selected_bridge_files <- list.files(path = paste0(path,"Combined_Output"), pattern = "Bridging", full.names = T))
+selected_bridge_files <- selected_bridge_files[2] # for now for better compatibility with dummy data
+
+bridge_data <- selected_bridge_files %>% 
+    lapply(read_csv) %>% 
+    bind_rows
+
 # Fix nas
 bridge_data$Sample.id[is.na(bridge_data$Sample.id)] <- "empty"
 head(bridge_data)
@@ -61,31 +71,51 @@ sample_df_mm <- get_mean_median(sample_data)
 log_toggle <- T
 Bridge_MM_MFI_Plots <- mean_median_lineplots(bridge_df_mm, log_toggle)
 do.call(plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_1_Bridging_data_only.jpg", scale = 2.5)
 
 # Figure 2 – Mean Counts in Boxplots ===========================================
 # Bridging and Sample data
 
-selected_date <- unique(sample_df_mm$Date)[1]
-mean_boxplots(sample_df_mm, selected_date)
-
 selected_date <- unique(bridge_df_mm$Date)[1]
 mean_boxplots(bridge_df_mm, selected_date)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Bridging.jpg", scale = 2.5)
+
+selected_date <- unique(sample_df_mm$Date)[1]
+mean_boxplots(sample_df_mm, selected_date)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Sample.jpg", scale = 2.5)
 
 # Figure 3 – Blank MFI Boxplots =================================================
 # get blank-sample data frames 
-sample_blanks_kt <- get_blanks_kt(sample_data)
-bridge_blanks_kt <- get_blanks_kt(bridge_data)
+sample_controls <- get_controls(sample_data)
+bridge_controls <- get_controls(bridge_data)
 
 # Bridging and Sample data
-blank_bees(sample_blanks_kt)
-blank_bees(bridge_blanks_kt)
+blank_lines(bridge_controls)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Bridging_lines.jpg", scale = 2.5)
+
+blank_bees(sample_controls)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_bees.jpg", scale = 2.5)
+
+blank_violins(sample_controls)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_violins.jpg", scale = 2.5)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-p <- delta_t_pointplot(df1 = sample_data, df2 = bridge_data)
-remove_parenthesis_legend(p)
+delta_t_pointplot(df1 = sample_data, df2 = bridge_data) %>% remove_parenthesis_legend()
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_4_Bridging_and_sample.jpg", scale = 2.5)
 
-# Figure 5 – Mean and Median MFI per plate Lineplots ===========================
+# Figure 5 – Plate control line plots ==========================================
+# Bridging and Sample data
+
+bridge_control_plots <- plate_control_plots(bridge_controls)
+do.call(plot_grid, c(bridge_control_plots, ncol = 1, align = "hv"))
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Bridge_controls.jpg", scale = 2.5)
+
+sample_control_plots <- plate_control_plots(sample_controls)
+do.call(plot_grid, c(sample_control_plots, ncol = 1, align = "hv"))
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Sample_controls.jpg", scale = 2.5)
+
+# Figure 6 – Mean and Median MFI per plate Lineplots ===========================
 # Get mean median per plate
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
 
@@ -95,19 +125,27 @@ x_axis <- "Week"
 x_axis <- "Plate_daywise"
 x_axis <- "Plate.id"
 
-Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis)
+log_toggle <- T
+
+Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis, log_toggle)
 do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_6_Sample_mm.jpg", scale = 2.5)
 
-# Figure 6 – KT-3 dotplots =====================================================
+# Figure 7 – KT-3 dotplots =====================================================
 # Bridging data only
-KT3_lineplot(bridge_blanks_kt)
+KT3_lineplot(bridge_controls)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_7_Bridging_KT-3.jpg", scale = 2.5)
 
-# Figure 7 – GST Beeswarm plot =================================================
-# Sample data
-GST_violins(sample_data)
+# Figure 8 – GST Beeswarm plot =================================================
 
 # Bridging data
 # TODO Filtering is only for now, because of bad dummy data
 bridge_data %>% 
-    filter(Gst.Tag<750) %>% 
+    rename_all(recode, "Gst Tag" = "Gst.Tag") %>%
+    filter(Gst.Tag < 750) %>% 
     GST_bees()
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
+
+# Sample data
+GST_violins(sample_data)
+ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Sample_violins.jpg", scale = 2.5)
