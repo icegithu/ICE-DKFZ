@@ -6,29 +6,54 @@
 
 read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_info_file){
     
+    # Get mod date and filenames of already available summary data
+    sample_summaries <- list.files(paste0(path_to_file, "/Combined_Output/"))
+    sample_summaries <- sample_summaries[grepl("Sample", sample_summaries)]
+    mod_times_summaries <- file.mtime(paste0(path_to_file, "/Combined_Output/", sample_summaries))
     
-    (loc <- paste0(path_to_file, "/Rohdaten/"))
-    (available_weeks <- gsub(".*/", "", list.dirs(loc)))
-    (available_weeks <- available_weeks[grepl("Woche", available_weeks)])
-    
-    (existing_weeks <- unique(str_extract(list.files(paste(path_to_file, "Combined_Output/", sep = "/"), pattern = "Sample"), "Woche\\d\\d?")))
-    
-    if (length(existing_weeks) == length(available_weeks)) {
-        (to_read_in_weeks <- gtools::mixedsort(available_weeks)[length(available_weeks)])
-    } else if (length(existing_weeks) == 0) {
-        (to_read_in_weeks <- available_weeks)
-    } else {
-        to_read_in_weeks <- available_weeks[!grepl(paste(existing_weeks, collapse = "|") , available_weeks)]
-        (to_read_in_weeks <- unique(c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)])))
+    if (length(sample_summaries) == 0) {
+        sample_summaries <- "empty"
+        mod_times_summaries <- "19000101 10:30"
     }
     
+    # Only get the modification date
+    summarized_data <- data.frame(Filenames = sample_summaries, modification = mod_times_summaries, week = str_extract(sample_summaries, "Woche\\d\\d?"))
+    (summarized_data <- separate(summarized_data, col = modification, into = c("Date", "Time"), sep = " "))
+    # Convert date into numeric
+    summarized_data$Date <- as.numeric(gsub("-", "", summarized_data$Date))
+    
+    # get raw data files location
+    (current_path <- paste0(path_to_file, "/Rohdaten/"))
+    # read in only sample files
+    (Sample_plates_raw <- list.files(path = current_path, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
+    mod_times_files <- file.mtime(paste0(current_path, Sample_plates_raw))
+    # Only get the modification date
+    (raw_data <- data.frame(Filenames = Sample_plates_raw, modification = mod_times_files, week = str_extract(Sample_plates_raw, "Woche\\d\\d?")))
+    (raw_data <- separate(raw_data, col = modification, into = c("Date", "Time"), sep = " "))
+    # Convert date into numeric
+    (raw_data$Date <- as.numeric(gsub("-", "", raw_data$Date)))
+    
+    # match modifications date from summarized data to raw data based on week number
+    raw_data$available_data_date <- summarized_data$Date[match(raw_data$week, summarized_data$week)]
+    
+    # Check if the available data is older
+    # True value means that the datafile needs to be read in
+    raw_data$needs_updating <- raw_data$Date > raw_data$available_data_date
+    # If no data is available then NA, so convert them to True as well
+    raw_data$needs_updating[is.na(raw_data$needs_updating)] <- T
+    # Get the list of weeks to read in
+    (to_read_in_weeks <- unique(raw_data$week[raw_data$needs_updating]))
+    
+    if (length(to_read_in_weeks) == 0) {
+        print("Nothing to update")
+    }
     
     for (week in seq_along(to_read_in_weeks)) {
         
         # week <- 1 # debug
         
-        (current_week <- to_read_in_weeks[week])
-        (current_path <- paste0(paste0(path_to_file, "/Rohdaten/", current_week)))
+        (current_path <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
+        (current_path <- current_path[grepl(to_read_in_weeks[week], current_path)])
         
         # TODO this regex pattern might need some more work
         (Sample_plates_raw <- list.files(path = current_path, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
@@ -138,7 +163,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         
         write_csv(x = Sample_all, file = filename)
         
-        print(paste("Sample data collected and saved under:", filename))
+        print(paste(to_read_in_weeks[week], "- Sample data collected and saved under:", filename))
         
     }
     
@@ -147,27 +172,54 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
 
 read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge_info_file){
     
-    (loc <- paste0(path_to_file, "/Rohdaten/"))
-    (available_weeks <- gsub(".*/", "", list.dirs(loc)))
-    (available_weeks <- available_weeks[grepl("Woche", available_weeks)])
+    # Get mod date and filenames of already available summary data
+    bridging_summaries <- list.files(paste0(path_to_file, "/Combined_Output/"))
+    bridging_summaries <- bridging_summaries[grepl("Bridging", bridging_summaries)]
+    mod_times_summaries <- file.mtime(paste0(path_to_file, "/Combined_Output/", bridging_summaries))
     
-    (existing_weeks <- unique(str_extract(list.files(paste(path_to_file, "Combined_Output/", sep = "/"), pattern = "Bridging"), "Woche\\d\\d?")))
+    if (length(bridging_summaries) == 0) {
+        bridging_summaries <- "empty"
+        mod_times_summaries <- "19000101 10:30"
+    }
     
-    if (length(existing_weeks) == length(available_weeks)) {
-        (to_read_in_weeks <- gtools::mixedsort(available_weeks)[length(available_weeks)])
-    } else if (length(existing_weeks) == 0) {
-        (to_read_in_weeks <- available_weeks)
-    } else {
-        to_read_in_weeks <- available_weeks[!grepl(paste(existing_weeks, collapse = "|") , available_weeks)]
-        (to_read_in_weeks <- unique(c(to_read_in_weeks, gtools::mixedsort(available_weeks)[length(available_weeks)])))
+    # Only get the modification date
+    summarized_data <- data.frame(Filenames = bridging_summaries, modification = mod_times_summaries, week = str_extract(bridging_summaries, "Woche\\d\\d?"))
+    (summarized_data <- separate(summarized_data, col = modification, into = c("Date", "Time"), sep = " "))
+    # Convert date into numeric
+    summarized_data$Date <- as.numeric(gsub("-", "", summarized_data$Date))
+    
+    # get raw data files location
+    (current_path <- paste0(path_to_file, "/Rohdaten/"))
+    # read in only sample files
+    (Bridging_plates_raw <- list.files(path = current_path, pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
+    mod_times_files <- file.mtime(paste0(current_path, Bridging_plates_raw))
+    # Only get the modification date
+    (raw_data <- data.frame(Filenames = Bridging_plates_raw, modification = mod_times_files, week = str_extract(Bridging_plates_raw, "Woche\\d\\d?")))
+    (raw_data <- separate(raw_data, col = modification, into = c("Date", "Time"), sep = " "))
+    # Convert date into numeric
+    raw_data$Date <- as.numeric(gsub("-", "", raw_data$Date))
+    
+    # match modifications date from summarized data to raw data based on week number
+    raw_data$available_data_date <- summarized_data$Date[match(raw_data$week, summarized_data$week)]
+    
+    # Check if the available data is older
+    # True value means that the datafile needs to be read in
+    raw_data$needs_updating <- raw_data$Date > raw_data$available_data_date
+    # If no data is available then NA, so convert them to True as well
+    raw_data$needs_updating[is.na(raw_data$needs_updating)] <- T
+    # Get the list of weeks to read in
+    (to_read_in_weeks <- unique(raw_data$week[raw_data$needs_updating]))
+    
+    if (length(to_read_in_weeks) == 0) {
+        print("Nothing to update")
     }
     
     for (week in seq_along(to_read_in_weeks)) {
         
         # week <- 1 # debug
         
-        (current_week <- to_read_in_weeks[week])
-        (current_path <- paste0(paste0(path_to_file, "/Rohdaten/", current_week)))
+        (current_path <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
+        (current_path <- current_path[grepl(to_read_in_weeks[week], current_path)])
         
         # TODO this regex pattern might need some more work
         (Bridge_plates_raw <- list.files(path = current_path, pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
@@ -268,7 +320,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
         
         write_csv(x = Bridge_all, file = filename)
         
-        print(paste("Bridging data collected and saved under:", filename))
+        print(paste(to_read_in_weeks[week], "- Bridging data collected and saved under:", filename))
     }
 }
 
@@ -317,7 +369,7 @@ mean_median_lineplots <- function(df, log_toggle){
         ungroup() %>% 
         mutate(across(c(Date), factor))
     
-    df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
+    # df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
     out_list <- list()
     # Draw median MFI lineplot
