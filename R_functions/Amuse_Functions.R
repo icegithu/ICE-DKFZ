@@ -13,39 +13,33 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     
     if (length(sample_summaries) == 0) {
         sample_summaries <- "empty"
-        mod_times_summaries <- "19000101 10:30"
+        mod_times_summaries <- as.POSIXct("1900-01-01 10:30:00 CET")
     }
     
-    # Only get the modification date
+    # Make a Df out of it
     summarized_data <- data.frame(Filenames = sample_summaries, modification = mod_times_summaries, week = str_extract(sample_summaries, "Woche\\d\\d?"))
-    (summarized_data <- separate(summarized_data, col = modification, into = c("Date", "Time"), sep = " "))
-    # Convert date into numeric
-    summarized_data$Date <- as.numeric(gsub("-", "", summarized_data$Date))
     
     # get raw data files location
     (current_path <- paste0(path_to_file, "/Rohdaten/"))
     # read in only sample files
     (Sample_plates_raw <- list.files(path = current_path, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
     mod_times_files <- file.mtime(paste0(current_path, Sample_plates_raw))
-    # Only get the modification date
-    (raw_data <- data.frame(Filenames = Sample_plates_raw, modification = mod_times_files, week = str_extract(Sample_plates_raw, "Woche\\d\\d?")))
-    (raw_data <- separate(raw_data, col = modification, into = c("Date", "Time"), sep = " "))
-    # Convert date into numeric
-    (raw_data$Date <- as.numeric(gsub("-", "", raw_data$Date)))
+    # Make a Df out of it
+    (raw_data <- data.frame(Filenames = Sample_plates_raw, mod.time = mod_times_files, week = str_extract(Sample_plates_raw, "Woche\\d\\d?")))
     
     # match modifications date from summarized data to raw data based on week number
-    raw_data$available_data_date <- summarized_data$Date[match(raw_data$week, summarized_data$week)]
+    raw_data$available_data_date <- summarized_data$modification[match(raw_data$week, summarized_data$week)]
     
     # Check if the available data is older
     # True value means that the datafile needs to be read in
-    raw_data$needs_updating <- raw_data$Date > raw_data$available_data_date
+    raw_data$needs_updating <- raw_data$mod.time > raw_data$available_data_date
     # If no data is available then NA, so convert them to True as well
     raw_data$needs_updating[is.na(raw_data$needs_updating)] <- T
     # Get the list of weeks to read in
     (to_read_in_weeks <- unique(raw_data$week[raw_data$needs_updating]))
     
     if (length(to_read_in_weeks) == 0) {
-        print("Nothing to update")
+        return("Nothing to update")
     }
     
     for (week in seq_along(to_read_in_weeks)) {
@@ -166,9 +160,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         print(paste(to_read_in_weeks[week], "- Sample data collected and saved under:", filename))
         
     }
-    
 }
-
 
 read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge_info_file){
     
@@ -179,39 +171,33 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     
     if (length(bridging_summaries) == 0) {
         bridging_summaries <- "empty"
-        mod_times_summaries <- "19000101 10:30"
+        mod_times_summaries <- as.POSIXct("1900-01-01 10:30:00 CET")
     }
     
-    # Only get the modification date
+    # Make a Df out of it
     summarized_data <- data.frame(Filenames = bridging_summaries, modification = mod_times_summaries, week = str_extract(bridging_summaries, "Woche\\d\\d?"))
-    (summarized_data <- separate(summarized_data, col = modification, into = c("Date", "Time"), sep = " "))
-    # Convert date into numeric
-    summarized_data$Date <- as.numeric(gsub("-", "", summarized_data$Date))
     
     # get raw data files location
     (current_path <- paste0(path_to_file, "/Rohdaten/"))
     # read in only sample files
     (Bridging_plates_raw <- list.files(path = current_path, pattern = "FM Platte \\d\\d\\d\\d.*csv", recursive = T))
     mod_times_files <- file.mtime(paste0(current_path, Bridging_plates_raw))
-    # Only get the modification date
-    (raw_data <- data.frame(Filenames = Bridging_plates_raw, modification = mod_times_files, week = str_extract(Bridging_plates_raw, "Woche\\d\\d?")))
-    (raw_data <- separate(raw_data, col = modification, into = c("Date", "Time"), sep = " "))
-    # Convert date into numeric
-    raw_data$Date <- as.numeric(gsub("-", "", raw_data$Date))
+    # Make a Df out of it
+    (raw_data <- data.frame(Filenames = Bridging_plates_raw, mod.time = mod_times_files, week = str_extract(Bridging_plates_raw, "Woche\\d\\d?")))
     
     # match modifications date from summarized data to raw data based on week number
-    raw_data$available_data_date <- summarized_data$Date[match(raw_data$week, summarized_data$week)]
+    raw_data$available_data_date <- summarized_data$modification[match(raw_data$week, summarized_data$week)]
     
     # Check if the available data is older
     # True value means that the datafile needs to be read in
-    raw_data$needs_updating <- raw_data$Date > raw_data$available_data_date
+    raw_data$needs_updating <- raw_data$mod.time > raw_data$available_data_date
     # If no data is available then NA, so convert them to True as well
     raw_data$needs_updating[is.na(raw_data$needs_updating)] <- T
     # Get the list of weeks to read in
     (to_read_in_weeks <- unique(raw_data$week[raw_data$needs_updating]))
     
     if (length(to_read_in_weeks) == 0) {
-        print("Nothing to update")
+        return("Nothing to update")
     }
     
     for (week in seq_along(to_read_in_weeks)) {
