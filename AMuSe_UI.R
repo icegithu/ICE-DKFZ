@@ -194,17 +194,10 @@ server <- function(input, output, session) {
   observeEvent(input$create_summaries,{
     sample_info <- read.xlsx(SAMPLE_INFO_FILE)
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
-    read_in_sample_data(paste0(RAW_DATA_DIR), sample_info)
-    read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info)
-    updated_files <- c()
-    #get list of files that where modified in the last 10 min 
-    for (file in list.files(SUMMARY_DIR)){
-        if(difftime(Sys.time() , file.info(paste0(SUMMARY_DIR,"/",file))$mtime, units = "mins") < 10){
-            updated_files <- c(updated_files,file)
-        }
-    }
-    
-    
+    updated_files <- c("Sample files:")
+    updated_files <- c(updated_files, read_in_sample_data(paste0(RAW_DATA_DIR), sample_info))
+    updated_files <- c(updated_files, "Bridging files:")
+    updated_files <- c(updated_files, read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info))
     created_files$files <- updated_files
   })
   
@@ -221,11 +214,10 @@ server <- function(input, output, session) {
   
   output$files_created_text <- renderText({ 
       if (length(created_files$files)>0){
-          paste0("The following files were created or updated:\n",
                  paste0(
                      created_files$files,
                      collapse = "\n"
-                 ))}
+                 )}
       else{
           "  "
       }})

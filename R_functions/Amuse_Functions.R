@@ -41,6 +41,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     if (length(to_read_in_weeks) == 0) {
         return("Nothing to update")
     }
+    files_updated_text <- c()
     
     for (week in seq_along(to_read_in_weeks)) {
         
@@ -157,9 +158,10 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         
         write_csv(x = Sample_all, file = filename)
         
-        print(paste(to_read_in_weeks[week], "- Sample data collected and saved under:", filename))
+        files_updated_text<- c(files_updated_text,(paste(to_read_in_weeks[week], "- Sample data collected and saved under:", filename)))
         
     }
+    return(files_updated_text)
 }
 
 read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge_info_file){
@@ -199,6 +201,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     if (length(to_read_in_weeks) == 0) {
         return("Nothing to update")
     }
+    files_updated_text <- c()
     
     for (week in seq_along(to_read_in_weeks)) {
         
@@ -306,8 +309,9 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
         
         write_csv(x = Bridge_all, file = filename)
         
-        print(paste(to_read_in_weeks[week], "- Bridging data collected and saved under:", filename))
+        files_updated_text <- c(files_updated_text,(paste(to_read_in_weeks[week], "- Bridging data collected and saved under:", filename)))
     }
+    return(files_updated_text)
 }
 
 # Figure 1 – Mean/Median MFI Lineplots =========================================
