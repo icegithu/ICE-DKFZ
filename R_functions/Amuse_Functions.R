@@ -490,7 +490,7 @@ blank_lines <- function(df){
     df <- df %>% filter(Sample.id == "blank", Analyte != "Total.Events")
     
     plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
+        ggplot(df, aes(x = Analyte, y = MFI, color = as.character(Plate.id), group = as.character(Plate.id))) + 
         geom_line(linewidth = 1) + 
         geom_point() + 
         labs(color = "Plate.ID", x = "")
