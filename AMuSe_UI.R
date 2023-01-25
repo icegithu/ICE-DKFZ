@@ -197,11 +197,25 @@ server <- function(input, output, session) {
   observeEvent(input$create_summaries,{
     sample_info <- read.xlsx(SAMPLE_INFO_FILE)
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+    # run script to gather files
     updated_files <- c("Sample files:")
     updated_files <- c(updated_files, read_in_sample_data(paste0(RAW_DATA_DIR), sample_info))
     updated_files <- c(updated_files, "Bridging files:")
     updated_files <- c(updated_files, read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info))
+    # update the text with the new files
     created_files$files <- updated_files
+    # update the calendar with the new available dates 
+    highlightedDates  <- get_all_available_days(SUMMARY_DIR)
+    calendar_options <- data.frame(highlightedDates)
+    calendar_options$maxDate <- tail(highlightedDates,n=1)
+    
+    updateAirDateInput(
+        session = session,
+        "datemultiple",
+        options = calendar_options, 
+        value =  tail(highlightedDates,n=1)
+    )
+    
   })
   
   output$files_to_load_text <- renderText({ 
