@@ -165,23 +165,31 @@ server <- function(input, output, session) {
   get_dates_to_load <- reactive({
         date_list <-input$datemultiple
         avaliable_dates <- get_avaliable_dates(SUMMARY_DIR)
+        files_to_load <- c()
         if (is.null(date_list)){
             # if no date is selected, the last two are loaded
             dates_to_load$dates <- tail(avaliable_dates,n=2)
         }
         else{
-            monday_list <- cut(as.Date(date_list), "week")
-            monday_list <- factor(format(as.Date(monday_list),"%Y%m%d"))
-            # TODO: this assumes that the available dates are mondays, it might need change
-            date_intersection <- factor(avaliable_dates,levels = levels(monday_list))
-            date_intersection <- date_intersection[!is.na(date_intersection)]
-            if (length(date_intersection) == 0){
-                showModal(modalDialog("No data found for the dates selected, loading the two more recent",easyClose = T))
-                date_intersection <- tail(avaliable_dates,n=2)
+            for (date in avaliable_dates){ 
+                date_edges <- str_split(date,"-")[[1]]
+                date_edges_asdate <- as.Date(as.character(date_edges),format="%Y%m%d")
+                all_days <- seq(date_edges_asdate[1], date_edges_asdate[2],by="days")
+                for(selected_date in date_list){
+                    if(selected_date %in% all_days){
+                        files_to_load <- c(files_to_load, date_edges[1])
+                    }
+                }
             }
-            dates_to_load$dates <- sort(as.character(date_intersection))
+            dates_to_load$dates <- sort(as.character(files_to_load))
+        }
+        if (length(files_to_load) == 0){
+            showModal(modalDialog("No data found for the dates selected, loading the two more recent",easyClose = T))
+            files_to_load <- tail(avaliable_dates,n=2)
+            dates_to_load$dates <- sort(as.character(files_to_load))
         }
   })
+  
   # Reactive containers ====
   loaded_files <- reactiveValues()
   dates_to_load <- reactiveValues()
