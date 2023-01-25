@@ -47,7 +47,10 @@ ui <- fluidPage(
                        tags$div(tags$p()),
                        verbatimTextOutput("files_created_text"),
                        tags$div(tags$p()),
-                       airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1),
+                       airDatepickerInput("datemultiple", "Select individual dates:", 
+                                          multiple = T, inline = T,firstDay = 1, 
+                                          highlightedDates = get_all_available_days(SUMMARY_DIR),
+                                          maxDate = tail(get_all_available_days(SUMMARY_DIR),n=1)),
                        fluidRow(
                            column(1,actionButton("load_button", "Load"),),
                            column(4, align = "left",verbatimTextOutput("files_to_load_text")),

@@ -709,7 +709,7 @@ get_all_available_days <-function(summary_dir){
     # bridge data 
     
     files_list <- list.files(summary_dir)
-    date_list <- unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d\\d\\d"))
+    date_list <- sort(unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d\\d\\d")))
     all_available_days <- as.Date(c())
     
     for(date in date_list){
@@ -717,6 +717,7 @@ get_all_available_days <-function(summary_dir){
         date_edges <- as.Date(as.character(date_edges),format="%Y%m%d")
         all_available_days <- c(all_available_days,seq(date_edges[1], date_edges[2],by="days"))
     }
+    return(all_available_days)
 }
 
 get_avaliable_dates <- function(summary_dir){
