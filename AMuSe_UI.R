@@ -184,7 +184,7 @@ server <- function(input, output, session) {
             dates_to_load$dates <- sort(unique(as.character(files_to_load)))
         }
         if (length(files_to_load) == 0){
-            showModal(modalDialog("No data found for the dates selected, loading the two more recent",easyClose = T))
+            showModal(modalDialog("No data found for the selected dates, loading the most recent files",easyClose = T,style = "color: red;"))
             files_to_load <- tail(avaliable_dates,n=2)
             dates_to_load$dates <- sort(as.character(files_to_load))
         }
