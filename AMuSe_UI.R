@@ -47,7 +47,10 @@ ui <- fluidPage(
                        tags$div(tags$p()),
                        verbatimTextOutput("files_created_text"),
                        tags$div(tags$p()),
-                       airDatepickerInput("datemultiple", "Select individual dates:", multiple = T, inline = T,firstDay = 1),
+                       airDatepickerInput("datemultiple", "Select individual dates:", 
+                                          multiple = T, inline = T,firstDay = 1, 
+                                          highlightedDates = get_all_available_days(SUMMARY_DIR),
+                                          maxDate = tail(get_all_available_days(SUMMARY_DIR),n=1)),
                        fluidRow(
                            column(1,actionButton("load_button", "Load"),),
                            column(4, align = "left",verbatimTextOutput("files_to_load_text")),
@@ -162,23 +165,31 @@ server <- function(input, output, session) {
   get_dates_to_load <- reactive({
         date_list <-input$datemultiple
         avaliable_dates <- get_avaliable_dates(SUMMARY_DIR)
+        files_to_load <- c()
         if (is.null(date_list)){
             # if no date is selected, the last two are loaded
             dates_to_load$dates <- tail(avaliable_dates,n=2)
         }
         else{
-            monday_list <- cut(as.Date(date_list), "week")
-            monday_list <- factor(format(as.Date(monday_list),"%Y%m%d"))
-            # TODO: this assumes that the available dates are mondays, it might need change
-            date_intersection <- factor(avaliable_dates,levels = levels(monday_list))
-            date_intersection <- date_intersection[!is.na(date_intersection)]
-            if (length(date_intersection) == 0){
-                showModal(modalDialog("No data found for the dates selected, loading the two more recent",easyClose = T))
-                date_intersection <- tail(avaliable_dates,n=2)
+            for (date in avaliable_dates){ 
+                date_edges <- str_split(date,"-")[[1]]
+                date_edges_asdate <- as.Date(as.character(date_edges),format="%Y%m%d")
+                all_days <- seq(date_edges_asdate[1], date_edges_asdate[2],by="days")
+                for(selected_date in date_list){
+                    if(selected_date %in% all_days){
+                        files_to_load <- c(files_to_load, date_edges[1])
+                    }
+                }
             }
-            dates_to_load$dates <- sort(as.character(date_intersection))
+            dates_to_load$dates <- sort(unique(as.character(files_to_load)))
+        }
+        if (length(files_to_load) == 0){
+            showModal(modalDialog("No data found for the selected dates, loading the most recent files",easyClose = T,style = "color: red;"))
+            files_to_load <- tail(avaliable_dates,n=2)
+            dates_to_load$dates <- sort(as.character(files_to_load))
         }
   })
+  
   # Reactive containers ====
   loaded_files <- reactiveValues()
   dates_to_load <- reactiveValues()
@@ -194,11 +205,25 @@ server <- function(input, output, session) {
   observeEvent(input$create_summaries,{
     sample_info <- read.xlsx(SAMPLE_INFO_FILE)
     bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+    # run script to gather files
     updated_files <- c("Sample files:")
     updated_files <- c(updated_files, read_in_sample_data(paste0(RAW_DATA_DIR), sample_info))
     updated_files <- c(updated_files, "Bridging files:")
     updated_files <- c(updated_files, read_in_bridging_data(paste0(RAW_DATA_DIR), bridge_info))
+    # update the text with the new files
     created_files$files <- updated_files
+    # update the calendar with the new available dates 
+    highlightedDates  <- get_all_available_days(SUMMARY_DIR)
+    calendar_options <- data.frame(highlightedDates)
+    calendar_options$maxDate <- tail(highlightedDates,n=1)
+    
+    updateAirDateInput(
+        session = session,
+        "datemultiple",
+        options = calendar_options, 
+        value =  tail(highlightedDates,n=1)
+    )
+    
   })
   
   output$files_to_load_text <- renderText({ 

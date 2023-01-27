@@ -699,16 +699,32 @@ GST_violins <- function(df){
     
     return(fix_jpeg_download(ggplotly(plot), "GST_Sample"))
     
-}    
+}
 
+get_all_available_days <-function(summary_dir){
+    # Gets all days in between the filenames in the summary folder
+    # the dates are returned in a vector to be used with the calendar input
+    # 
+    # All dates are grabbed independetly if they contain only summary or only 
+    # bridge data 
+    
+    files_list <- list.files(summary_dir)
+    date_list <- sort(unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d\\d\\d")))
+    all_available_days <- as.Date(c())
+    
+    for(date in date_list){
+        date_edges <- str_split(date,"-")[[1]]
+        date_edges <- as.Date(as.character(date_edges),format="%Y%m%d")
+        all_available_days <- c(all_available_days,seq(date_edges[1], date_edges[2],by="days"))
+    }
+    return(all_available_days)
+}
 
 get_avaliable_dates <- function(summary_dir){
     # get all files available
     files_list <- list.files(summary_dir)
     # get dates from those files
-    # date_list <- unique(str_extract(files_list, "\\d\\d\\.\\d\\d?\\.\\d\\d\\d\\d")) # old file date format
-    # new date format
-    date_list <- unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d"))
+    date_list <- unique(str_extract(files_list, "\\d\\d\\d\\d\\d\\d\\d\\d-\\d\\d\\d\\d\\d\\d\\d\\d"))
     date_list <- date_list[!is.na(date_list)]
     return(date_list)
 }
