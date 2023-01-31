@@ -35,7 +35,7 @@ source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 ui <- fluidPage(
   
-  themeSelector(),
+    theme = shinytheme("superhero"),
   
   titlePanel("AMuSe"),
 
