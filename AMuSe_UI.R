@@ -317,7 +317,7 @@ server <- function(input, output, session) {
   })
   
   output$Blank_Bridging  <- renderPlotly({
-      blank_lines(loaded_files$Bridge_controls)
+      remove_hover_duplicate(blank_lines(loaded_files$Bridge_controls))
   })
   
   ## TAB 3 Temperature====
