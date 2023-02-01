@@ -1,6 +1,6 @@
-function download_plotly(plotly_id, filename){
+function download_plotly(plotly_id, filename, width = 1000, height = 500){
     var gd = document.getElementById(plotly_id);
-    Plotly.Snapshot.toImage(gd, {format: "jpeg"}).once("success", function(url) {
+    Plotly.toImage(gd, {format: "jpeg", width: width, height: height}).then(function(url) {
     var a = window.document.createElement("a");
     a.href = url; 
     a.type = "image/jpeg";
@@ -28,11 +28,11 @@ document.getElementById("download_blank_bridge").onclick = function() {
 }
 
 document.getElementById("download_deltaT").onclick = function() {
-    download_plotly("DeltaT_Combined","temperature.jpeg");
+    download_plotly("DeltaT_Combined","temperature.jpeg", 800, 800);
 }
 
 document.getElementById("download_KT3_bridge").onclick = function() {
-    download_plotly("KT3_Bridge","KT3_bridge.jpeg");
+    download_plotly("KT3_Bridge","KT3_bridge.jpeg", 800, 800);
 }
 document.getElementById("download_GST_sample").onclick = function() {
     download_plotly("GST_Sample","GST_sample.jpeg");
