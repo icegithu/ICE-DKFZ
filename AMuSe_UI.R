@@ -90,6 +90,7 @@ ui <- fluidPage(
                            column(2, actionButton("download_bridge_control_1", "Download Bridge 1", icon = icon("download")),),
                            column(2, actionButton("download_bridge_control_2", "Download Bridge 2", icon = icon("download")),),
                            column(2, actionButton("download_bridge_control_3", "Download Bridge 3", icon = icon("download")),),
+                           column(2, div(id='my_log', materialSwitch(inputId = "platecontrol_log", value = F,status = "danger", label = "Log Scale")),),
                        ),
                        plotlyOutput(outputId = "bridge_control_1", width = PLOT_WIDTH_LONG),
                        plotlyOutput(outputId = "bridge_control_2", width = PLOT_WIDTH_LONG),
@@ -109,7 +110,10 @@ ui <- fluidPage(
               tabPanel("KT3",
                        tags$h2("KT3"),
                        tags$h3("Bridging Data"),
-                       actionButton("download_KT3_bridge", "Download KT3", icon = icon("download")),
+                       fluidRow(
+                        column(2, actionButton("download_KT3_bridge", "Download KT3", icon = icon("download")),),
+                        column(2, div(id='my_log', materialSwitch(inputId = "KT3_log", value = F,status = "danger", label = "Log Scale")),),
+                       ),
                        plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT), 
               ),
               
@@ -146,7 +150,7 @@ ui <- fluidPage(
                                                                     status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id","Plate daywise" = "Plate_daywise"), inline=T)
+                              radioButtons("perplate_display","", c("Plate daywise" = "Plate_daywise", "Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
