@@ -38,7 +38,13 @@ ui <- fluidPage(
   theme = shinytheme("superhero"),
   
   titlePanel("AMuSe"),
-
+  tags$head(tags$style(".shiny-notification {
+              height: 100px;
+              width: 800px;
+              position:fixed;
+              top: calc(50% - 50px);;
+              left: calc(50% - 400px);;
+            }")),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
                        tags$div(tags$p()),
@@ -208,8 +214,11 @@ server <- function(input, output, session) {
     })
 
   observeEvent(input$create_summaries,{
-    sample_info <- read.xlsx(SAMPLE_INFO_FILE)
-    bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+      withProgress(message = "Updating files ...",{
+        sample_info <- read.xlsx(SAMPLE_INFO_FILE)
+        incProgress(0.5)
+        bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+      })
     # run script to gather files
     updated_files <- c("Sample files:")
     updated_files <- c(updated_files, read_in_sample_data(paste0(RAW_DATA_DIR), sample_info))
@@ -256,20 +265,22 @@ server <- function(input, output, session) {
     all_files_list <- list.files(SUMMARY_DIR)
     Sample_df <- data.frame()
     Bridge_df <- data.frame()
-    for (i in 1:length(dates_to_load$dates)){
-      selected_date <- dates_to_load$dates[i]
-      sample_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Sample")]
-      if(! is_empty(sample_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
-        Sample_df <- rbind(Sample_df, myDF)
-      }
-      bridge_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Bridging")]
-      if(! is_empty(bridge_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
-        Bridge_df <- rbind(Bridge_df, myDF)
-      }
-    }
-
+    withProgress(message = 'Loading data...',{
+        for (i in 1:length(dates_to_load$dates)){
+          selected_date <- dates_to_load$dates[i]
+          sample_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Sample")]
+          if(! is_empty(sample_file)){
+            myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
+            Sample_df <- rbind(Sample_df, myDF)
+          }
+          bridge_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Bridging")]
+          if(! is_empty(bridge_file)){
+            myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
+            Bridge_df <- rbind(Bridge_df, myDF)
+          }
+          incProgress(1/length(dates_to_load$dates))
+        }
+    })
     loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
     loaded_files$Bridge <- Bridge_df
     loaded_files$Bridge_controls <- get_controls(Bridge_df) 
