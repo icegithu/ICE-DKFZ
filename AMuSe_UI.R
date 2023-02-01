@@ -340,27 +340,27 @@ server <- function(input, output, session) {
   ## TAB 4 Control plates====
   
   output$bridge_control_1  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]]))
   })
   
   output$bridge_control_2  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]]))
   })
   
   output$bridge_control_3  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]]))
   })
   
   output$sample_control_1  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]]))
   })
   
   output$sample_control_2  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]]))
   })
   
   output$sample_control_3  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]]))
   })
   
 
