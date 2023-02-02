@@ -49,7 +49,10 @@ ui <- fluidPage(
               tabPanel("Load Files",
                        tags$div(tags$p()),
                        tags$div(tags$p()),
-                       actionButton("create_summaries", "Update files"), 
+                       fluidRow(
+                        column(8,actionButton("create_summaries", "Update files")),
+                        column(4,actionButton('all_weeks_button', "Create all weeks summary", icon = icon("download")),)
+                       ),
                        tags$div(tags$p()),
                        verbatimTextOutput("files_created_text"),
                        tags$div(tags$p()),
@@ -240,6 +243,29 @@ server <- function(input, output, session) {
     
   })
   
+  observeEvent(input$all_weeks_button, {
+      all_files_list <- list.files(SUMMARY_DIR)
+      Sample_df <- data.frame()
+      Bridge_df <- data.frame()
+      withProgress(message = 'Gathering data...',{
+          for (i in 1:length(all_files_list)){
+              if(str_detect(all_files_list[i],"Sample_data")){
+                  myDF <-read.csv(paste0(SUMMARY_DIR,"/",all_files_list[i]), header = T)
+                  Sample_df <- rbind(Sample_df, myDF)
+              }
+              if(str_detect(all_files_list[i],"Bridging_data")){
+                  myDF <-read.csv(paste0(SUMMARY_DIR,"/",all_files_list[i]), header = T)
+                  Bridge_df <- rbind(Bridge_df, myDF)
+              }
+              incProgress(1/length(all_files_list))
+          }
+      })
+      write_csv(x = Sample_df, file = paste0(SUMMARY_DIR,"/","all_sample.csv"))
+      write_csv(x = Bridge_df, file = paste0(SUMMARY_DIR,"/","all_bridging.csv"))
+      
+  })
+  
+  # Text rendering functions ====
   output$files_to_load_text <- renderText({ 
       if (length(dates_to_load$dates)>0){
           paste0("The following weeks will be loaded:\n",
