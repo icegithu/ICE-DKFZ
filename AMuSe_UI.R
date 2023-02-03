@@ -79,6 +79,7 @@ ui <- fluidPage(
               ),
               tabPanel("Blank Values",
                        tags$h2("Blank Values"),
+                       airDatepickerInput("blank_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        actionButton("download_blank_bridge", "Download Bridge", icon = icon("download")),
                        plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH_LONG),
@@ -326,6 +327,12 @@ server <- function(input, output, session) {
       updateAirDateInput(
           session = session,
           "date_boxplot",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "blank_calendar",
           value = calendar_options$highlightedDates,
           options = calendar_options
       )
