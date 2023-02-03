@@ -52,8 +52,7 @@ ui <- fluidPage(
              }")),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
-                       tags$div(tags$p()),
-                       tags$div(tags$p()),
+                       tags$div(tags$br(),tags$br()),
                        fluidRow(
                         column(8,actionButton("create_summaries", "Update files")),
                         column(4,actionButton('all_weeks_button', "Create all weeks summary", icon = icon("download")),)
