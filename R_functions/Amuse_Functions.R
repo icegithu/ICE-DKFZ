@@ -355,7 +355,7 @@ mean_median_lineplots <- function(df, log_toggle){
     
     # df <- bridge_df_mm #debug
     
-    df <- df %>% filter(Analyte != "Total.Events") %>% 
+    df <- df %>% filter(!grepl("Total.Events", Analyte, ignore.case = T)) %>% 
         ungroup() %>% 
         mutate(across(c(Date), factor))
     
@@ -364,13 +364,13 @@ mean_median_lineplots <- function(df, log_toggle){
     out_list <- list()
     # Draw median MFI lineplot
     out_list[["Mean"]] <-
-        ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Mean MFI")
+        ggplot(df, aes(x = Analyte, y = Mean_MFI, color = Date)) + 
+        geom_line(linewidth = 1, aes(group = Date)) + geom_point() + labs(x = "", y = "Mean MFI")
     
     # Draw median MFI lineplot
     out_list[["Median"]] <-
-        ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date, group = Date)) + 
-        geom_line(linewidth = 1) + geom_point() + labs(x = "", y = "Median MFI")
+        ggplot(df, aes(x = Analyte, y = Median_MFI, color = Date)) + 
+        geom_line(linewidth = 1, aes(group = Date)) + geom_point() + labs(x = "", y = "Median MFI")
     
     if (log_toggle) {
         
@@ -401,25 +401,21 @@ mean_boxplots <- function(df, selected_date = ""){
     # df <- sample_df_mm #debug
     # selected_date <- unique(df$Date)[1] #debug
     
-    # TODO we might wanna use if missing so that if no date is specified we select all of them
-    # if (selected_date == "") {}
-    
-    df <- df %>% filter(Analyte != "Total.Events" & Date == selected_date) %>%
+    df <- df %>% filter(!grepl("Total.Events", Analyte, ignore.case = T) & 
+                            grepl(paste(selected_date, collapse = "|"), Date)) %>%
         ungroup() %>%
         mutate(across(c(Date, Analyte), factor))
-    
-    # df$Analyte <- fct_relevel(df$Analyte, c("Gst Tag"), after = Inf)
     
     # Draw Mean Boxes
     Mean_box_plot <-
         ggplot(df, aes(x = Analyte, y = Mean_Counts)) + 
-        geom_boxplot() + labs(x = "", y = "Mean Counts") +
+        geom_boxplot(aes(fill = Date)) + 
+        labs(x = "", y = "Mean Counts") +
         geom_hline(yintercept = 80, linetype = "longdash", color = "red") +
         geom_hline(yintercept = 100, linetype = "longdash", color = "orange")
     
     plotly_box <- ggplotly(Mean_box_plot) %>% 
-        layout(annotations = list(list(showarrow = FALSE, yref = "paper", xref = "paper", y = 1, x = 1, 
-                                       text = paste("Showing data from", selected_date))))
+        layout(boxmode = "group")
     
     return(fix_jpeg_download(plotly_box,"Counts"))
 }
@@ -439,46 +435,35 @@ get_controls <- function(df){
     
     final_df <- 
         df %>% filter(grepl("blank|KT3|Plattenkontrolle", Sample.id) & Data_type == "MFI") %>% 
-        select(Plate.id, Date, Well, Sample.id, matches(analyte_cols)) %>%
+        select(Plate.id, Date, Well, Sample.id, Plate.number.intern, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
         ungroup() %>%
-        mutate(across(c(Date, Analyte), factor))
+        mutate(across(c(Date, Analyte, Plate.id), factor))
     
     final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
-    
-    # final_df$Analyte <- fct_relevel(final_df$Analyte, c("Gst Tag", "Total Events"), after = Inf)
     
     return(final_df)
     
 }
 
-blank_violins <- function(df){
+blank_bees <- function(df, selected_date = ""){
     
     # df <- sample_controls # debug
-    head(df)
+    # selected_date <- unique(df$Date)[1:4] #debug
     
-    df <- df %>% filter(Sample.id == "blank" & Analyte != "Total.Events")
+    df <- df %>% filter(Sample.id == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
+                            grepl(paste(selected_date, collapse = "|"), Date))
     
-    plot <-
-        ggplot(df, aes(x = Analyte, y = MFI))+#, text = paste("Plate.ID", Plate.id))) + 
-        geom_violin(width=0.8, alpha = 0.5) +
-        geom_boxplot(width=0.2, show.legend = F) +
-        # geom_text(aes(label = Plate.id), alpha = 0)
-        labs(color = "Plate.ID", x = "")
-    
-    return(fix_jpeg_download(ggplotly(plot), "blanks"))
-    
-}    
-
-blank_bees <- function(df){
-    
-    # df <- sample_controls # debug
-    df <- df %>% filter(Sample.id == "blank", Analyte != "Total.Events")
+    df_median <- df %>% group_by(Analyte) %>%
+        summarise(MFI = median(MFI, na.rm = T))
     
     plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, group = Plate.id)) + 
-        geom_beeswarm(dodge.width = 0.4) + 
+        ggplot(df, aes(x = Analyte, y = MFI)) + 
+        # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
+        geom_beeswarm(cex = rel(0.5), aes(color = Plate.id, label = Date)) +
+        geom_crossbar(data = df_median, width = rel(0.5), size = rel(0.5), aes(ymin = MFI, ymax = MFI), show.legend = F, color = "black")+
         labs(color = "Plate.ID", x = "")
+    
     
     return(fix_jpeg_download(ggplotly(plot), "blanks"))
     
@@ -487,11 +472,12 @@ blank_bees <- function(df){
 blank_lines <- function(df){
     
     # df <- bridge_controls # debug
-    df <- df %>% filter(Sample.id == "blank", Analyte != "Total.Events")
+    # head(df)
+    df <- df %>% filter(Sample.id == "blank" & !grepl("Total.Events", Analyte, ignore.case = T))
     
     plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = as.character(Plate.id), group = as.character(Plate.id))) + 
-        geom_line(linewidth = 1) + 
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, label = Plate.number.intern)) + 
+        geom_line(linewidth = 1, aes(group = Plate.id)) + 
         geom_point() + 
         labs(color = "Plate.ID", x = "")
     
@@ -520,42 +506,58 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     
     # Add type
     delta_df1$Type <- "Sample Plates"
-    delta_df2$Type <- "Bridging Plate"
+    delta_df2$Type <- "Bridging Plates"
     
     # Combine
     combo_df <- rbind(delta_df1, delta_df2)
     
     plot <-
-        ggplot(combo_df, aes(x = Date, y = Delta_t, shape = Type, color = Plate.id)) +
-        geom_beeswarm(size = 1) + 
+        ggplot(combo_df, aes(x = Date, y = Delta_t, label = Plate.id, color = Type)) +
+        geom_beeswarm(size = rel(1.5)) + 
         coord_cartesian(ylim = c(-2.5, 2.5))+
         geom_hline(yintercept = 0, linetype = "longdash")+
-        labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate ID")
+        labs(x = "", y = "Delta T (\u00B0C)", shape = "Plate Type", color = "Plate Type")
     
     return(fix_jpeg_download(ggplotly(plot),"Temperature_plot","short"))
 }
 
 # Figure 5 – Plate control line plots ==========================================
 
-plate_control_plots <- function(df){
+plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, log_toggle = F){
     
-    # df <- sample_controls # debug
+    # df1 <- bridge_controls #debug
+    # df2 <- sample_controls # debug
     
-    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & Analyte != "Total.Events")
-    # head(df)
-    df$Analyte
+    df <- rbind(df1, df2)
+    
+    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & !grepl("Total.Events", Analyte, ignore.case = T)) %>%
+        mutate(across(Plate.number.intern, factor)) %>%
+        arrange(Plate.number.intern)
+    
+    df$Plate.id <- factor(df$Plate.id, levels = unique(df$Plate.id))
     
     out_list <- list()
     
     for (i in unique(df$Sample.id)) {
+        # i <- unique(df$Sample.id)[1]
         
         temp_df <- df %>% filter(Sample.id == i)
         
         out_list[[i]] <-
-            ggplot(temp_df, aes(x = Plate.id, y = MFI, color = Analyte, group = Analyte, text = Date)) +
-            geom_line(linewidth = 1) + geom_point() + 
+            ggplot(temp_df, aes(x = Plate.id, y = MFI,
+                                color = Analyte, label = Date, text = paste("Plate # intern.", Plate.number.intern))) +
+            geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
             scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
-            labs(x = "", y = "MFI")
+            labs(x = "Plate No.", y = "MFI", title = unique(temp_df$Sample.id)) 
+        
+        if (log_toggle) {
+            
+            out_list[[i]] <- out_list[[i]] + 
+                scale_y_log10("Log10(MFI)",
+                              breaks = scales::trans_breaks("log10", function(x) 10^x),
+                              labels = scales::trans_format("log10", math_format(10^.x))) +
+                annotation_logticks(sides = "l")
+        }
     }
     
     return(out_list)
@@ -564,50 +566,79 @@ plate_control_plots <- function(df){
 # Figure 6 – Mean and Median MFI per plate Lineplots ===========================
 # get mean and median per plate function.
 
-get_mean_median_per_plate <- function(df){
+get_mean_median_per_plate <- function(df, x_axis_selection){
     
     # df <- sample_data #debug
+    # x_axis_selection <- "Date"
+    # x_axis_selection <- "Week"
+    # x_axis_selection <- "Plate.id"
     # head(df)
     
     start <- which(colnames(df) == "Comment")
-    analyte_cols <- colnames(df)[(start + 1) : ncol(df)]
-    analyte_cols
+    analyte_cols <- colnames(df)[(start + 1) : (ncol(df)-1)] # -1 from the end to remove total events
+    analyte_cols 
     
     final_df <- df %>% 
         filter(Data_type == "MFI") %>% 
-        select(Plate.id, Date, Week, Plate_daywise, matches(analyte_cols)) %>%
+        select(Plate.id, Date, Week, Plate_daywise, Plate.number.intern, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
-        group_by(Plate.id, Date, Week, Plate_daywise, Analyte) %>% 
-        summarise(Mean_MFI = mean(MFI),
-                  Median_MFI = median(MFI))
+        mutate(across(c(Date, Plate_daywise, Week), factor)) 
     
     final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
+    
+    if (x_axis_selection == "Date") {
+        
+        final_df <- final_df %>% 
+            group_by(Date, Analyte) %>% 
+            summarise(Mean_MFI = mean(MFI),
+                      Median_MFI = median(MFI)) %>% 
+            rename(goes_to_x = Date) %>%
+            mutate(Plate.number.intern = NA)
+        
+    } else if (x_axis_selection == "Week") {
+        
+        final_df <- final_df %>% 
+            group_by(Week, Analyte) %>% 
+            summarise(Mean_MFI = mean(MFI),
+                      Median_MFI = median(MFI)) %>% 
+            rename(goes_to_x = Week) %>%
+            mutate(Plate.number.intern = NA)
+        
+    } else {
+        
+        final_df <- final_df %>% 
+            group_by(Plate.id, Plate.number.intern, Analyte) %>%
+            summarise(Mean_MFI = mean(MFI),
+                      Median_MFI = median(MFI)) %>%
+            rename(goes_to_x = Plate.id) %>%
+            arrange(Plate.number.intern)
+        
+        final_df$goes_to_x <- factor(final_df$goes_to_x, unique(final_df$goes_to_x))
+    }
     
     return(final_df)
     
 }
 
 # draw the Delta-T point plots function
-mm_per_plate_lineplots <- function(df, x_axis = x_axis, log_toggle = F){
+mm_per_plate_lineplots <- function(df, log_toggle = F){
     
     # df <- sample_df_mm_per_plate # Debug
-    
-    df <- df %>% ungroup() %>% filter(Analyte != "Total.Events") %>% 
-        mutate(across(c(Date, Plate_daywise), factor))
+    # head(df)
     
     out_list <- list()
     
-    # Draw Lineplot Mean platewise 
+    # Draw Lineplot Mean
     out_list[["Mean"]] <-
-        ggplot(df, aes(x = get(x_axis), y = Mean_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) + geom_point() + 
+        ggplot(df, aes(x = goes_to_x, y = Mean_MFI, color = Analyte, label = Plate.number.intern)) + 
+        geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "Mean MFI")
     
-    # Draw Lineplot Mean platewise 
+    # Draw Lineplot Mean 
     out_list[["Median"]] <-
-        ggplot(df, aes(x = get(x_axis), y = Median_MFI, color = Analyte, group = Analyte)) + 
-        geom_line(linewidth = 1) + geom_point() + 
+        ggplot(df, aes(x = goes_to_x, y = Median_MFI, color = Analyte, label = Plate.number.intern)) + 
+        geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "Median MFI")
     
@@ -632,70 +663,78 @@ mm_per_plate_lineplots <- function(df, x_axis = x_axis, log_toggle = F){
 }
 
 # Figure 7 – KT-3 Lineplots ====================================================
-# TODO Will need a Mean over plate.id/date probably
 
 # Draw the KT-3 pointplots function
-KT3_lineplot <- function(df){
+KT3_lineplot <- function(df, log_toggle = F){
     
     # df <- bridge_controls # debug
     
     df <- df %>% filter(Sample.id == "KT3")# %>%
+    head(df)
     
     plot <-
-        ggplot(df, aes(x = Date, y = MFI, group = Analyte, color = Analyte)) + 
-        geom_line(linewidth = 1) + geom_point() +
+        ggplot(df, aes(x = Date, y = MFI, color = Analyte, label = Plate.id)) + 
+        geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() +
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
     
-    return(fix_jpeg_download(remove_hover_duplicate(ggplotly(plot)),"KT3_Plot","short"))
+    
+    if (log_toggle) {
+        
+        plot <- plot + 
+            scale_y_log10("KT-3 Log10(MFI)",
+                          breaks = scales::trans_breaks("log10", function(x) 10^x),
+                          labels = scales::trans_format("log10", math_format(10^.x))) +
+            annotation_logticks(sides = "l")
+    }
+    
+    return(fix_jpeg_download(ggplotly(plot),"KT3_Plot","short"))
     
 }    
 
 # Figure 8 – GST Beeswarm ======================================================
 # Draw the GST bees function
+# GST_bees <- function(df){
+#     
+#     # df <- bridge_data # debug
+#     
+#     df <- df %>% filter(Data_type == "MFI")
+#     df$Plate.id <- as.character(df$Plate.id)
+#     df$Date <- factor(df$Date)
+#     head(df)
+#     
+#     plot <-
+#         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id, label = Well)) + 
+#         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
+#     
+#     return(fix_jpeg_download(ggplotly(plot),"GST_Bridge"))
+#     
+# }    
+
+# findoutlier <- function(x) {
+#     return(x < quantile(x, .25) - 1.5*IQR(x) | x > quantile(x, .75) + 1.5*IQR(x))
+# }
+
 GST_bees <- function(df){
     
-    # df <- bridge_data # debug
-    
-    df <- df %>% filter(Data_type == "MFI")
-    df$Plate.id <- as.character(df$Plate.id)
-    df$Date <- factor(df$Date)
-    
-    plot <-
-        ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id)) + 
-        geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
-    
-    return(fix_jpeg_download(ggplotly(plot),"GST_Bridge"))
-    
-}    
-
-findoutlier <- function(x) {
-    return(x < quantile(x, .25) - 1.5*IQR(x) | x > quantile(x, .75) + 1.5*IQR(x))
-}
-
-GST_violins <- function(df){
-    
     # df <- sample_data # debug
-    # head(df)
-    
+    # df <- bridge_data
     df <-
         df %>% filter(Data_type == "MFI") %>% 
-        rename_all(recode, "Gst Tag" = "Gst.Tag") %>%
-        mutate(outlier = ifelse(findoutlier(Gst.Tag), Well, NA)) %>% 
         mutate(across(c(Plate.id, Plate_daywise, Date), factor))
     
     # head(df)
+    df_median <- df %>% group_by(Date) %>%
+        summarise(Gst.Tag = median(Gst.Tag, na.rm = T))
     
     plot <-
-        ggplot(df, aes(x = Plate_daywise, y = Gst.Tag, fill = Plate_daywise, text = paste("Plate.ID", Plate.id))) + 
-        geom_violin(width=0.7, alpha = 0.5) + 
-        geom_boxplot(width=0.2, show.legend = F) +
-        # TODO - the Hjust does not work for some reason.
-        geom_text(aes(label = outlier), na.rm=TRUE, hjust = -0.5, vjust = 0.5) +
-        labs(x = "", y = "GST Tag", fill = "Plate No. Daywise") + 
-        facet_grid(~ Date) +
-        theme(strip.background = element_blank(), 
-              strip.text.x = element_text(size = rel(1.3)))
+        ggplot(df, aes(x = Date, y = Gst.Tag)) + 
+        geom_beeswarm(cex = rel(0.5), aes(color = Plate_daywise,
+                                          text = paste("Plate.ID", Plate.id), label = Well)) +
+        geom_crossbar(data = df_median, size = rel(0.4), aes(ymin = Gst.Tag, ymax = Gst.Tag), 
+                      show.legend = F, color = "black", width = rel(0.5)) + 
+        # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
+        labs(x = "", y = "GST Tag", color = "Plate No. Daywise")
     
     return(fix_jpeg_download(ggplotly(plot), "GST_Sample"))
     
@@ -729,27 +768,27 @@ get_avaliable_dates <- function(summary_dir){
     return(date_list)
 }
 
-remove_hover_duplicate <- function(p){
-    for (i in 1:length(p[["x"]][["data"]])){
-        points_in_line <- p[["x"]][["data"]][[i]][["text"]]
-        for (j in 1:length(points_in_line)){
-            initial_text <- p[["x"]][["data"]][[i]][["text"]][[j]] 
-            text_as_list <- str_split(initial_text, "<br")
-            if (length(text_as_list)>0){
-                p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list[[1]]),collapse = "<br")
-            }
-        }
-    }
-    return(p)
-}
+# remove_hover_duplicate <- function(p){
+#     for (i in 1:length(p[["x"]][["data"]])){
+#         points_in_line <- p[["x"]][["data"]][[i]][["text"]]
+#         for (j in 1:length(points_in_line)){
+#             initial_text <- p[["x"]][["data"]][[i]][["text"]][[j]] 
+#             text_as_list <- str_split(initial_text, "<br")
+#             if (length(text_as_list)>0){
+#                 p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list[[1]]),collapse = "<br")
+#             }
+#         }
+#     }
+#     return(p)
+# }
 
-remove_parenthesis_legend <- function(p){
-    for (i in 1:length(p[["x"]][["data"]])){
-        name <- p[["x"]][["data"]][[i]][["name"]]
-        p[["x"]][["data"]][[i]][["name"]] <- str_remove_all(str_remove_all(name,"\\("),"\\)")
-    }
-    return(p)
-}
+# remove_parenthesis_legend <- function(p){
+#     for (i in 1:length(p[["x"]][["data"]])){
+#         name <- p[["x"]][["data"]][[i]][["name"]]
+#         p[["x"]][["data"]][[i]][["name"]] <- str_remove_all(str_remove_all(name,"\\("),"\\)")
+#     }
+#     return(p)
+# }
 
 fix_jpeg_download <- function(p, filename, size = "long"){
     if (size=="short"){
