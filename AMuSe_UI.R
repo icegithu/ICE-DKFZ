@@ -44,7 +44,12 @@ ui <- fluidPage(
               position:fixed;
               top: calc(50% - 50px);;
               left: calc(50% - 400px);;
-            }")),
+            }
+            pre.shiny-text-output {
+            word-wrap: normal;
+            background-color: #0000;
+            color: white;
+             }")),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
                        tags$div(tags$p()),
