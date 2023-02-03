@@ -262,6 +262,7 @@ server <- function(input, output, session) {
       })
       write_csv(x = Sample_df, file = paste0(SUMMARY_DIR,"/","all_sample.csv"))
       write_csv(x = Bridge_df, file = paste0(SUMMARY_DIR,"/","all_bridging.csv"))
+      showModal(modalDialog(paste0("Files created on ",SUMMARY_DIR),easyClose = T))
       
   })
   
