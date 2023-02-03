@@ -164,7 +164,7 @@ ui <- fluidPage(
                                                                     status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Plate daywise" = "Plate_daywise", "Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id"), inline=T)
+                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week","Plate daywise" = "Plate_daywise"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
