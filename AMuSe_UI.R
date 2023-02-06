@@ -72,7 +72,7 @@ ui <- fluidPage(
               ),
               tabPanel("Bead Counts",
                        tags$h2("Bead Counts"),
-                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
+                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Mean Count Bridging"),
                        actionButton('download_box_count_bridge', "Download Count Bridge", icon = icon("download")),
                        plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH_LONG),
@@ -101,25 +101,17 @@ ui <- fluidPage(
                        tags$h2("Plates Controls"),
                        tags$h3("Bridging Data"),
                        fluidRow(
-                           column(2, actionButton("download_bridge_control_1", "Download Bridge 1", icon = icon("download")),),
-                           column(2, actionButton("download_bridge_control_2", "Download Bridge 2", icon = icon("download")),),
-                           column(2, actionButton("download_bridge_control_3", "Download Bridge 3", icon = icon("download")),),
+                           column(2, actionButton("download_control_1", "Download Control 1", icon = icon("download")),),
+                           column(2, actionButton("download_control_2", "Download Control 2", icon = icon("download")),),
+                           column(2, actionButton("download_control_3", "Download Control 3", icon = icon("download")),),
                            column(2, div(id='my_log', materialSwitch(inputId = "platecontrol_log", value = F,status = "danger", label = "Log Scale")),),
                        ),
-                       plotlyOutput(outputId = "bridge_control_1", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "bridge_control_2", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "bridge_control_3", width = PLOT_WIDTH_LONG),
-                       tags$div(tags$p()),
-                       tags$div(tags$p()),
-                       tags$h3("Sample Data"),
-                       fluidRow(
-                           column(2, actionButton("download_sample_control_1", "Download Sample 1", icon = icon("download")),),
-                           column(2, actionButton("download_sample_control_2", "Download Sample 2", icon = icon("download")),),
-                           column(2, actionButton("download_sample_control_3", "Download Sample 3", icon = icon("download")),),
-                       ),
-                       plotlyOutput(outputId = "sample_control_1", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "sample_control_2", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "sample_control_3", width = PLOT_WIDTH_LONG),
+                       tags$div(tags$br(),tags$br()),
+                       plotlyOutput(outputId = "control_1", width = PLOT_WIDTH_LONG),
+                       tags$div(tags$br(),tags$br()),
+                       plotlyOutput(outputId = "control_2", width = PLOT_WIDTH_LONG),
+                       tags$div(tags$br(),tags$br()),
+                       plotlyOutput(outputId = "control_3", width = PLOT_WIDTH_LONG),
               ),
               tabPanel("KT3",
                        tags$h2("KT3"),
@@ -318,7 +310,6 @@ server <- function(input, output, session) {
     loaded_files$Bridge_controls <- get_controls(Bridge_df) 
     loaded_files$Sample_mm <- get_mean_median(Sample_df)
     loaded_files$Sample <- Sample_df
-    loaded_files$Sample_mm_per_plate <- get_mean_median_per_plate(Sample_df)
     loaded_files$Sample_controls <- get_controls(Sample_df) 
 
   })
@@ -331,7 +322,7 @@ server <- function(input, output, session) {
       updateAirDateInput(
           session = session,
           "date_boxplot",
-          value = calendar_options$highlightedDates,
+          value = tail(calendar_options$highlightedDates,1),
           options = calendar_options
       )
       updateAirDateInput(
@@ -362,84 +353,77 @@ server <- function(input, output, session) {
   
   ## TAB 2 Blanks ====
   output$Blank_Sample  <- renderPlotly({
-      blank_violins(loaded_files$Sample_controls)
+      date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
+      blank_bees(loaded_files$Sample_controls, date_as_number)
   })
   
   output$Blank_Bridging  <- renderPlotly({
-      remove_hover_duplicate(blank_lines(loaded_files$Bridge_controls))
+      blank_lines(loaded_files$Bridge_controls)
   })
   
   ## TAB 3 Temperature====
   
   output$DeltaT_Combined  <- renderPlotly({
-      remove_parenthesis_legend(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))
+      delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge)
   })
   
   ## TAB 4 Control plates====
   
-  output$bridge_control_1  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]]))
+  output$control_1  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[1]])
   })
   
-  output$bridge_control_2  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]]))
+  output$control_2  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[2]])
   })
   
-  output$bridge_control_3  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]]))
+  output$control_3  <- renderPlotly({
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[3]])
   })
   
-  output$sample_control_1  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]]))
-  })
-  
-  output$sample_control_2  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]]))
-  })
-  
-  output$sample_control_3  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]]))
-  })
+
   
 
   ## TAB 5 KT3 ====
   output$KT3_Bridge  <- renderPlotly({
-      KT3_lineplot(loaded_files$Bridge_controls)
+      KT3_lineplot(loaded_files$Bridge_controls, input$KT3_log)
   })
   
   ## TAB 6 GST====
   output$GST_Sample  <- renderPlotly({
-      GST_violins(loaded_files$Sample)
+      GST_bees(loaded_files$Sample)
   })
   
   output$GST_Bridge  <- renderPlotly({
-      # TODO Only for now:
-      bridge_data <- loaded_files$Bridge %>% filter(Gst.Tag<750)
-      GST_bees(bridge_data)
+      # # TODO Only for now:
+      # bridge_data <- loaded_files$Bridge %>% filter(Gst.Tag<750)
+      GST_bees(loaded_files$Bridge)
   })
   
   
   ## TAB 7 Bridging Data====
   output$Mean_MFI_Bridging  <- renderPlotly({
       fix_jpeg_download(
-      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                         input$log_linear)[["Mean"]])),"MFI_bridge_mean") 
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                         input$log_linear)[["Mean"]]),"MFI_bridge_mean") 
   })
 
   output$Median_MFI_Bridging  <- renderPlotly({
       fix_jpeg_download(
-      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                          input$log_linear)[["Median"]])),"MFI_bridge_median")
+      ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                          input$log_linear)[["Median"]]),"MFI_bridge_median")
   })
   
   ## TAB 8 Sample MM ====
   
   output$Mean_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))
+      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display)
+      ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Mean"]])
   })
 
   output$Median_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))
+      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display)
+      ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Median"]])
   })
 
 }
