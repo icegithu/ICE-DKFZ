@@ -51,8 +51,9 @@ ui <- fluidPage(
             color: white;
              }
             .airdatepicker-highlighted {
-            font-weight: bold;
-            }")),
+    font-weight: bold;
+    background: #ccc;
+}")),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
                        tags$div(tags$br(),tags$br()),
