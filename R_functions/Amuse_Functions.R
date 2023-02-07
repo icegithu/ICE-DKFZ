@@ -41,6 +41,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
     if (length(to_read_in_weeks) == 0) {
         return("Nothing to update")
     }
+    
     files_updated_text <- c()
     
     for (week in seq_along(to_read_in_weeks)) {
@@ -78,7 +79,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             head(median_table)
             
             # add Data-type
-            median_table$Data_Type <- "MFI"
+            median_table$Data.Type <- "MFI"
             
             # find count table
             count_table_start <- which(grepl("^count$", temp_sample_data$Sample, ignore.case = T))
@@ -89,7 +90,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             head(count_table)
             
             # add Data-type
-            count_table$Data_Type <- "Counts"
+            count_table$Data.Type <- "Counts"
             head(count_table, 3)
             
             # Put MFI and Count tables together
@@ -114,7 +115,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(plate_x_log_data$Message[delta_start], "Temp .*C \\(")), ".*\\d"))
             
             # add the Delta T
-            med_count$Delta_T <- delta_temp
+            med_count$Delta.T <- delta_temp
             head(med_count)
             
             # add the sample from first cell to all the rest of in the same column
@@ -141,9 +142,13 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         # Merge raw data with Sample info file using plate ID,  
         head(Sample_info_file)
         Sample_all <- left_join(Sample_df, Sample_info_file, by = c("Plate.ID", "position"))
-        colnames(Sample_all) <- str_to_title(colnames(Sample_all))
-        Sample_all <- Sample_all %>% relocate(c("Plate.id", "Position", "Well", "Sample.id" , "Data_type", "Week", "Date", "Delta_t", "Fortnr", "Plate.number.intern", "Study", 
-                                                "Plate_daywise", "Assay.day", "Assay.date", "Comment"))
+        # Fix Col names
+        colnames(Sample_all) <- gsub(" |_", ".", colnames(Sample_all))
+        substr(colnames(Sample_all), 1, 1) <- toupper(substr(colnames(Sample_all), 1, 1))
+        colnames(Sample_all)
+        
+        Sample_all <- Sample_all %>% relocate(c("Plate.ID", "Position", "Well", "Sample.ID" , "Data.Type", "Week", "Date", "Delta.T", "FortNr", "Plate.number.intern", "Study", 
+                                                "Plate.daywise", "Assay.day", "Assay.date", "Comment"))
         head(Sample_all)
         
         # save the data
@@ -234,12 +239,12 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
             # median starts from 1st row
             (median_start <- which(grepl("median", temp_bridge_data$Sample, ignore.case = T)))
             bridge_median_df <- temp_bridge_data[(median_start+2):(median_start+97),]
-            bridge_median_df$Data_Type <- "MFI"
+            bridge_median_df$Data.Type <- "MFI"
             
             # count 
             count_start <- which(grepl('^count$', temp_bridge_data$Sample, ignore.case = T))
             bridge_count_table <- temp_bridge_data[(count_start+2):(count_start+97),]
-            bridge_count_table$Data_Type <- "Counts"
+            bridge_count_table$Data.Type <- "Counts"
             
             # Put those MFI and Count tables together
             Bridge_med_count <- rbind(bridge_median_df, bridge_count_table)
@@ -261,7 +266,7 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
             delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(Bridge_plate_x_log_data$Message[delta_start], "Temp .*C \\(")), ".*\\d"))
             
             # add the Delta T
-            Bridge_med_count$Delta_T <- delta_temp
+            Bridge_med_count$Delta.T <- delta_temp
             
             # add the sample from first cell to all the rest of in the same column
             Bridge_med_count$Sample <- Bridge_med_count$Sample[1]
@@ -285,17 +290,22 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
             
         }
         
+        # Merge raw data with Bridge info file using plate ID and position (redundant)
         Bridge_all <- left_join(Bridge_df, Bridge_info_file, by = c("Plate.ID", "position"))
-        colnames(Bridge_all) <- str_to_title(colnames(Bridge_all))
+        # Fix Col names
+        colnames(Bridge_all) <- gsub(" |_", ".", colnames(Bridge_all))
+        substr(colnames(Bridge_all), 1, 1) <- toupper(substr(colnames(Bridge_all), 1, 1))
+        colnames(Bridge_all)
+        # add Plate.daywise col for later. It's just the plate.ID repeated for bridging data
+        Bridge_all <- Bridge_all %>% rename(Plate.daywise = Plate) %>%
+            mutate(Plate.daywise = as.numeric(Plate.ID)) %>%
+            relocate(c("Plate.ID", "Position", "Well", "Sample.ID" , "Data.Type", "Week", "Date", "Delta.T", 
+                       "FortNr", "Plate.number.intern", "Study", 
+                       "Plate.daywise", "Assay.day", "Assay.date", "Comment"))
         
-        # Merge raw data with Sample info file using plate ID,  
+        # Change NAs to Empty for ggplot reasons
+        Bridge_all$Sample.ID[is.na(Bridge_all$Sample.ID)] <- "empty"
         head(Bridge_all, 2)
-        Bridge_all <- Bridge_all %>% relocate(c("Plate.id", "Position", "Well", "Sample.id" , "Data_type", 
-                                                "Week", "Date", "Delta_t", "Fortnr", "Plate.number.intern", 
-                                                "Study", "Plate", "Assay.day", "Assay.date", "Comment"))
-        head(Bridge_all, 2)
-        
-        Bridge_all <- Bridge_all %>% relocate(contains("Analyte"), .after = last_col())
         
         # save the data
         (start_date <- min(unique(Bridge_all$Date)))
@@ -329,12 +339,12 @@ get_mean_median <- function(df){
     
     final_df <- 
         df %>% 
-        select(Plate.id, Date, Sample.id, Data_type, matches(analyte_cols)) %>%
+        select(Plate.ID, Date, Sample.ID, Data.Type, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "Value") %>%
-        group_by(Plate.id, Date, Analyte, Data_type) %>% 
+        group_by(Plate.ID, Date, Analyte, Data.Type) %>% 
         summarise(Mean = mean(Value, na.rm = T),
                   Median = median(Value,  na.rm = T)) %>% 
-        pivot_wider(names_from = Data_type, values_from = c(Mean, Median))
+        pivot_wider(names_from = Data.Type, values_from = c(Mean, Median))
     
     final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
     
@@ -434,11 +444,11 @@ get_controls <- function(df){
     head(df)
     
     final_df <- 
-        df %>% filter(grepl("blank|KT3|Plattenkontrolle", Sample.id) & Data_type == "MFI") %>% 
-        select(Plate.id, Date, Well, Sample.id, Plate.number.intern, matches(analyte_cols)) %>%
+        df %>% filter(grepl("blank|KT3|Plattenkontrolle", Sample.ID) & Data.Type == "MFI") %>% 
+        select(Plate.ID, Date, Well, Sample.ID, Plate.number.intern, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
         ungroup() %>%
-        mutate(across(c(Date, Analyte, Plate.id), factor))
+        mutate(across(c(Date, Analyte, Plate.ID), factor))
     
     final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
     
@@ -446,12 +456,32 @@ get_controls <- function(df){
     
 }
 
+blank_lines <- function(df, selected_date = ""){
+    
+    # df <- bridge_controls # debug
+    # selected_date <- unique(df$Date)[1] #debug
+    # head(df)
+    
+    df <- df %>% filter(Sample.ID == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
+                            grepl(paste(selected_date, collapse = "|"), Date))
+    
+    plot <-
+        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.ID, label = Plate.number.intern)) + 
+        geom_line(linewidth = 1, aes(group = Plate.ID)) + 
+        geom_point() + 
+        labs(color = "Plate.ID", x = "")
+    
+    return(fix_jpeg_download(ggplotly(plot), "blanks"))
+    
+}    
+
 blank_bees <- function(df, selected_date = ""){
     
     # df <- sample_controls # debug
     # selected_date <- unique(df$Date)[1:4] #debug
+    # head(df)
     
-    df <- df %>% filter(Sample.id == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
+    df <- df %>% filter(Sample.ID == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
                             grepl(paste(selected_date, collapse = "|"), Date))
     
     df_median <- df %>% group_by(Analyte) %>%
@@ -460,26 +490,10 @@ blank_bees <- function(df, selected_date = ""){
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI)) + 
         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
-        geom_beeswarm(cex = rel(0.5), aes(color = Plate.id, label = Date)) +
+        geom_beeswarm(cex = rel(0.5), aes(color = Plate.ID, label = Date)) +
         geom_crossbar(data = df_median, width = rel(0.5), size = rel(0.5), aes(ymin = MFI, ymax = MFI), show.legend = F, color = "black")+
         labs(color = "Plate.ID", x = "")
     
-    
-    return(fix_jpeg_download(ggplotly(plot), "blanks"))
-    
-}    
-
-blank_lines <- function(df){
-    
-    # df <- bridge_controls # debug
-    # head(df)
-    df <- df %>% filter(Sample.id == "blank" & !grepl("Total.Events", Analyte, ignore.case = T))
-    
-    plot <-
-        ggplot(df, aes(x = Analyte, y = MFI, color = Plate.id, label = Plate.number.intern)) + 
-        geom_line(linewidth = 1, aes(group = Plate.id)) + 
-        geom_point() + 
-        labs(color = "Plate.ID", x = "")
     
     return(fix_jpeg_download(ggplotly(plot), "blanks"))
     
@@ -496,12 +510,12 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     
     # Subset data
     delta_df1 <- df1 %>% 
-        select(Plate.id, Date, Delta_t) %>% 
+        select(Plate.ID, Date, Delta.T) %>% 
         distinct()
     
     # Subset data    
     delta_df2 <- df2 %>% 
-        select(Plate.id, Date, Delta_t) %>% 
+        select(Plate.ID, Date, Delta.T) %>% 
         distinct()
     
     # Add type
@@ -512,7 +526,7 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     combo_df <- rbind(delta_df1, delta_df2)
     
     plot <-
-        ggplot(combo_df, aes(x = Date, y = Delta_t, label = Plate.id, color = Type)) +
+        ggplot(combo_df, aes(x = Date, y = Delta.T, label = Plate.ID, color = Type)) +
         geom_beeswarm(size = rel(1.5)) + 
         coord_cartesian(ylim = c(-2.5, 2.5))+
         geom_hline(yintercept = 0, linetype = "longdash")+
@@ -530,25 +544,25 @@ plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, lo
     
     df <- rbind(df1, df2)
     
-    df <- df %>% filter(grepl("Plattenkontrolle", Sample.id) & !grepl("Total.Events", Analyte, ignore.case = T)) %>%
+    df <- df %>% filter(grepl("Plattenkontrolle", Sample.ID) & !grepl("Total.Events", Analyte, ignore.case = T)) %>%
         mutate(across(Plate.number.intern, factor)) %>%
         arrange(Plate.number.intern)
     
-    df$Plate.id <- factor(df$Plate.id, levels = unique(df$Plate.id))
+    df$Plate.ID <- factor(df$Plate.ID, levels = unique(df$Plate.ID))
     
     out_list <- list()
     
-    for (i in unique(df$Sample.id)) {
-        # i <- unique(df$Sample.id)[1]
+    for (i in unique(df$Sample.ID)) {
+        # i <- unique(df$Sample.ID)[1]
         
-        temp_df <- df %>% filter(Sample.id == i)
+        temp_df <- df %>% filter(Sample.ID == i)
         
         out_list[[i]] <-
-            ggplot(temp_df, aes(x = Plate.id, y = MFI,
+            ggplot(temp_df, aes(x = Plate.ID, y = MFI,
                                 color = Analyte, label = Date, text = paste("Plate # intern.", Plate.number.intern))) +
             geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
             scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
-            labs(x = "Plate No.", y = "MFI", title = unique(temp_df$Sample.id)) 
+            labs(x = "Plate No.", y = "MFI", title = unique(temp_df$Sample.ID)) 
         
         if (log_toggle) {
             
@@ -579,10 +593,10 @@ get_mean_median_per_plate <- function(df, x_axis_selection){
     analyte_cols 
     
     final_df <- df %>% 
-        filter(Data_type == "MFI") %>% 
-        select(Plate.id, Date, Week, Plate_daywise, Plate.number.intern, matches(analyte_cols)) %>%
+        filter(Data.Type == "MFI") %>% 
+        select(Plate.ID, Date, Week, Plate.daywise, Plate.number.intern, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
-        mutate(across(c(Date, Plate_daywise, Week), factor)) 
+        mutate(across(c(Date, Plate.daywise, Week), factor)) 
     
     final_df$Analyte <- factor(final_df$Analyte, levels = analyte_cols)
     
@@ -592,7 +606,7 @@ get_mean_median_per_plate <- function(df, x_axis_selection){
             group_by(Date, Analyte) %>% 
             summarise(Mean_MFI = mean(MFI),
                       Median_MFI = median(MFI)) %>% 
-            rename(goes_to_x = Date) %>%
+            rename(X_axis = Date) %>%
             mutate(Plate.number.intern = NA)
         
     } else if (x_axis_selection == "Week") {
@@ -601,19 +615,19 @@ get_mean_median_per_plate <- function(df, x_axis_selection){
             group_by(Week, Analyte) %>% 
             summarise(Mean_MFI = mean(MFI),
                       Median_MFI = median(MFI)) %>% 
-            rename(goes_to_x = Week) %>%
+            rename(X_axis = Week) %>%
             mutate(Plate.number.intern = NA)
         
     } else {
         
         final_df <- final_df %>% 
-            group_by(Plate.id, Plate.number.intern, Analyte) %>%
+            group_by(Plate.ID, Plate.number.intern, Analyte) %>%
             summarise(Mean_MFI = mean(MFI),
                       Median_MFI = median(MFI)) %>%
-            rename(goes_to_x = Plate.id) %>%
+            rename(X_axis = Plate.ID) %>%
             arrange(Plate.number.intern)
         
-        final_df$goes_to_x <- factor(final_df$goes_to_x, unique(final_df$goes_to_x))
+        final_df$X_axis <- factor(final_df$X_axis, unique(final_df$X_axis))
     }
     
     return(final_df)
@@ -630,14 +644,14 @@ mm_per_plate_lineplots <- function(df, log_toggle = F){
     
     # Draw Lineplot Mean
     out_list[["Mean"]] <-
-        ggplot(df, aes(x = goes_to_x, y = Mean_MFI, color = Analyte, label = Plate.number.intern)) + 
+        ggplot(df, aes(x = X_axis, y = Mean_MFI, color = Analyte, label = Plate.number.intern)) + 
         geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "Mean MFI")
     
     # Draw Lineplot Mean 
     out_list[["Median"]] <-
-        ggplot(df, aes(x = goes_to_x, y = Median_MFI, color = Analyte, label = Plate.number.intern)) + 
+        ggplot(df, aes(x = X_axis, y = Median_MFI, color = Analyte, label = Plate.number.intern)) + 
         geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "Median MFI")
@@ -669,11 +683,11 @@ KT3_lineplot <- function(df, log_toggle = F){
     
     # df <- bridge_controls # debug
     
-    df <- df %>% filter(Sample.id == "KT3")# %>%
+    df <- df %>% filter(Sample.ID == "KT3")# %>%
     head(df)
     
     plot <-
-        ggplot(df, aes(x = Date, y = MFI, color = Analyte, label = Plate.id)) + 
+        ggplot(df, aes(x = Date, y = MFI, color = Analyte, label = Plate.ID)) + 
         geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() +
         scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
         labs(x = "", y = "KT-3 MFI", color = "Analyte") 
@@ -704,7 +718,7 @@ KT3_lineplot <- function(df, log_toggle = F){
 #     head(df)
 #     
 #     plot <-
-#         ggplot(df, aes(x = Date, y = Gst.Tag, color = Plate.id, label = Well)) + 
+#         ggplot(df, aes(x = Date, y = GST.tag, color = Plate.id, label = Well)) + 
 #         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
 #     
 #     return(fix_jpeg_download(ggplotly(plot),"GST_Bridge"))
@@ -720,22 +734,22 @@ GST_bees <- function(df){
     # df <- sample_data # debug
     # df <- bridge_data
     df <-
-        df %>% filter(Data_type == "MFI") %>% 
-        mutate(across(c(Plate.id, Plate_daywise, Date), factor))
+        df %>% filter(Data.Type == "MFI") %>% 
+        mutate(across(c(Plate.ID, Plate.daywise, Date), factor))
     
     # head(df)
     df_median <- df %>% group_by(Date) %>%
-        summarise(Gst.Tag = median(Gst.Tag, na.rm = T))
+        summarise(GST.tag = median(GST.tag, na.rm = T))
     
     plot <-
-        ggplot(df, aes(x = Date, y = Gst.Tag)) + 
-        geom_beeswarm(cex = rel(0.5), aes(color = Plate_daywise,
-                                          text = paste("Plate.ID", Plate.id), label = Well)) +
-        geom_crossbar(data = df_median, size = rel(0.4), aes(ymin = Gst.Tag, ymax = Gst.Tag), 
+        ggplot(df, aes(x = Date, y = GST.tag)) + 
+        geom_beeswarm(cex = rel(0.5), aes(color = Plate.daywise, alpha=.5,
+                                          text = paste("Plate.ID", Plate.ID), label = Well)) +
+        geom_crossbar(data = df_median, size = rel(0.4), aes(ymin = GST.tag, ymax = GST.tag), 
                       show.legend = F, color = "black", width = rel(0.5)) + 
         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
-        labs(x = "", y = "GST Tag", color = "Plate No. Daywise")
-    
+        labs(x = "", y = "GST Tag", color = "Plate No. Daywise") 
+
     return(fix_jpeg_download(ggplotly(plot), "GST_Sample"))
     
 }

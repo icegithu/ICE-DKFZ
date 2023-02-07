@@ -9,7 +9,6 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 
 # Libraries
 library("ggbeeswarm")
-library("cowplot")
 library("openxlsx")
 library("scales")
 library("tidyverse")
@@ -45,8 +44,7 @@ selected_samples_files <- selected_samples_files[2] # for now for better compati
 # Read in and bind rows
 sample_data <- selected_samples_files %>% 
     lapply(read_csv) %>% 
-    bind_rows %>%
-    rename_all(recode, "Gst Tag" = "Gst.Tag")
+    bind_rows
 
 # Read in bridging data for plotting
 list.files(paste0(path,"Combined_Output"))
@@ -55,14 +53,7 @@ selected_bridge_files <- selected_bridge_files[2] # for now for better compatibi
 
 bridge_data <- selected_bridge_files %>% 
     lapply(read_csv) %>% 
-    bind_rows %>% 
-    rename_all(recode, "Gst Tag" = "Gst.Tag") %>%
-    mutate(Plate_daywise = as.numeric(Plate.id)) %>%
-    relocate(Plate_daywise, .after = Plate)
-
-# Fix nas
-bridge_data$Sample.id[is.na(bridge_data$Sample.id)] <- "empty"
-head(bridge_data)
+    bind_rows
 
 ################################################################################
 
@@ -75,7 +66,7 @@ sample_df_mm <- get_mean_median(sample_data)
 log_toggle <- F
 Bridge_MM_MFI_Plots <- mean_median_lineplots(bridge_df_mm, log_toggle)
 Bridge_MM_MFI_Plots[[1]] %>% ggplotly()
-# do.call(plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
+# do.call(cowplot::cowplot::plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_1_Bridging_data_only.jpg", scale = 2.5)
 
 # Figure 2 – Mean Counts in Boxplots ===========================================
@@ -95,7 +86,8 @@ sample_controls <- get_controls(sample_data)
 bridge_controls <- get_controls(bridge_data)
 
 # Bridging and Sample data
-blank_lines(bridge_controls)
+(selected_date <- as.character(unique(bridge_controls$Date)[1:3]))
+blank_lines(bridge_controls, selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Bridging_lines.jpg", scale = 2.5)
 
 (selected_date <- as.character(unique(sample_controls$Date)[1:4]))
@@ -116,12 +108,11 @@ delta_t_pointplot(df1 = sample_data, df2 = bridge_data)
 
 log_toggle <- T
 all_controls <- plate_control_plots(bridge_controls, sample_controls, log_toggle)
-# do.call(plot_grid, c(plate_control_plots, ncol = 1, align = "hv"))
+# do.call(cowplot::plot_grid, c(plate_control_plots, ncol = 1, align = "hv"))
 all_controls[[1]] %>% ggplotly()
 all_controls[[2]] %>% ggplotly()
 all_controls[[3]] %>% ggplotly()
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Bridge_controls.jpg", scale = 2.5)
-
 
 # Figure 6 – Mean and Median MFI per plate Lineplots ===========================
 # Get mean median per selection. Either date, week or plate.id
@@ -132,12 +123,11 @@ x_axis_selection <- "Plate.id"
 
 sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data, x_axis_selection)
 
-
 log_toggle <- T
 
 Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, log_toggle)
 Sample_MM_per_plate[[1]] %>% ggplotly()
-# do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
+# do.call(cowplot::plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_6_Sample_mm.jpg", scale = 2.5)
 
 # Figure 7 – KT-3 dotplots =====================================================
@@ -153,7 +143,7 @@ KT3_lineplot(bridge_controls, log_toggle)
 # Bridging data
 # TODO Filtering is only for now, because of bad dummy data
 bridge_data %>% 
-    filter(Gst.Tag < 750) %>% 
+    filter(GST.tag < 750) %>% 
     GST_bees()
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
 
