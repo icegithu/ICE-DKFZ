@@ -782,27 +782,6 @@ get_avaliable_dates <- function(summary_dir){
     return(date_list)
 }
 
-# remove_hover_duplicate <- function(p){
-#     for (i in 1:length(p[["x"]][["data"]])){
-#         points_in_line <- p[["x"]][["data"]][[i]][["text"]]
-#         for (j in 1:length(points_in_line)){
-#             initial_text <- p[["x"]][["data"]][[i]][["text"]][[j]] 
-#             text_as_list <- str_split(initial_text, "<br")
-#             if (length(text_as_list)>0){
-#                 p[["x"]][["data"]][[i]][["text"]][[j]] <- paste(unique(text_as_list[[1]]),collapse = "<br")
-#             }
-#         }
-#     }
-#     return(p)
-# }
-
-# remove_parenthesis_legend <- function(p){
-#     for (i in 1:length(p[["x"]][["data"]])){
-#         name <- p[["x"]][["data"]][[i]][["name"]]
-#         p[["x"]][["data"]][[i]][["name"]] <- str_remove_all(str_remove_all(name,"\\("),"\\)")
-#     }
-#     return(p)
-# }
 
 fix_jpeg_download <- function(p, filename, size = "long"){
     if (size=="short"){
@@ -821,3 +800,26 @@ fix_jpeg_download <- function(p, filename, size = "long"){
     }
     return(p)
 }
+
+css_style <- ".shiny-notification {
+                  height: 100px;
+                  width: 800px;
+                  position:fixed;
+                  top: calc(50% - 50px);;
+                  left: calc(50% - 400px);;
+                }
+                pre.shiny-text-output {
+                    word-wrap: normal;
+                    background-color: #0000;
+                    color: white;
+                }
+                .airdatepicker-highlighted {
+                    font-weight: bold;
+                    background: #ddd;
+                }
+                .dp-note {
+                    background: #ddd;
+                }
+                .-selected- .dp-note {
+                    opacity: 0;
+                }"

@@ -58,26 +58,14 @@ document.getElementById("download_MFI_perplate_median").onclick = function() {
     download_plotly("Median_MFI_perplate","median_MFI_bridge_pp.jpeg");
 }
 
-document.getElementById("download_bridge_control_1").onclick = function() {
-    download_plotly("bridge_control_1","bridge_control_1.jpeg");
+document.getElementById("download_control_1").onclick = function() {
+    download_plotly("control_1","control_1.jpeg");
 }
 
-document.getElementById("download_bridge_control_2").onclick = function() {
-    download_plotly("bridge_control_2","bridge_control_2.jpeg");
+document.getElementById("download_control_2").onclick = function() {
+    download_plotly("control_2","control_2.jpeg");
 }
 
-document.getElementById("download_bridge_control_3").onclick = function() {
-    download_plotly("bridge_control_3","bridge_control_3.jpeg");
-}
-
-document.getElementById("download_sample_control_1").onclick = function() {
-    download_plotly("sample_control_1","sample_control_1.jpeg");
-}
-
-document.getElementById("download_sample_control_2").onclick = function() {
-    download_plotly("sample_control_2","sample_control_2.jpeg");
-}
-
-document.getElementById("download_sample_control_3").onclick = function() {
-    download_plotly("sample_control_3","sample_control_3.jpeg");
+document.getElementById("download_control_3").onclick = function() {
+    download_plotly("control_3","control_3.jpeg");
 }
