@@ -9,7 +9,6 @@ rm(list = ls(all.names = TRUE)) # will clear all objects including hidden object
 
 # Libraries
 library("ggbeeswarm")
-library("cowplot")
 library("openxlsx")
 library("scales")
 library("tidyverse")
@@ -56,10 +55,6 @@ bridge_data <- selected_bridge_files %>%
     lapply(read_csv) %>% 
     bind_rows
 
-# Fix nas
-bridge_data$Sample.id[is.na(bridge_data$Sample.id)] <- "empty"
-head(bridge_data)
-
 ################################################################################
 
 # Figure 1 – Mean/Median MFI Lineplots =========================================
@@ -68,21 +63,22 @@ bridge_df_mm <- get_mean_median(bridge_data)
 sample_df_mm <- get_mean_median(sample_data)
 
 # Bridging data only + Log/linear toggle
-log_toggle <- T
+log_toggle <- F
 Bridge_MM_MFI_Plots <- mean_median_lineplots(bridge_df_mm, log_toggle)
-do.call(plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_1_Bridging_data_only.jpg", scale = 2.5)
+Bridge_MM_MFI_Plots[[1]] %>% ggplotly()
+# do.call(cowplot::cowplot::plot_grid, c(Bridge_MM_MFI_Plots, ncol = 1, align = "hv"))
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_1_Bridging_data_only.jpg", scale = 2.5)
 
 # Figure 2 – Mean Counts in Boxplots ===========================================
 # Bridging and Sample data
 
-selected_date <- unique(bridge_df_mm$Date)[1]
+selected_date <- unique(bridge_df_mm$Date)[3]
 mean_boxplots(bridge_df_mm, selected_date)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Bridging.jpg", scale = 2.5)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Bridging.jpg", scale = 2.5)
 
-selected_date <- unique(sample_df_mm$Date)[1]
+selected_date <- unique(sample_df_mm$Date)[1:4]
 mean_boxplots(sample_df_mm, selected_date)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Sample.jpg", scale = 2.5)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_2_Sample.jpg", scale = 2.5)
 
 # Figure 3 – Blank MFI Boxplots =================================================
 # get blank-sample data frames 
@@ -90,62 +86,67 @@ sample_controls <- get_controls(sample_data)
 bridge_controls <- get_controls(bridge_data)
 
 # Bridging and Sample data
-blank_lines(bridge_controls)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Bridging_lines.jpg", scale = 2.5)
+(selected_date <- as.character(unique(bridge_controls$Date)[1:3]))
+blank_lines(bridge_controls, selected_date)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Bridging_lines.jpg", scale = 2.5)
 
-blank_bees(sample_controls)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_bees.jpg", scale = 2.5)
+(selected_date <- as.character(unique(sample_controls$Date)[1:4]))
+blank_bees(sample_controls, selected_date)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_bees.jpg", scale = 2.5)
 
-blank_violins(sample_controls)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_violins.jpg", scale = 2.5)
+# blank_violins(sample_controls)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_violins.jpg", scale = 2.5)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-delta_t_pointplot(df1 = sample_data, df2 = bridge_data) %>% remove_parenthesis_legend()
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_4_Bridging_and_sample.jpg", scale = 2.5)
+delta_t_pointplot(df1 = sample_data, df2 = bridge_data) 
+# %>% remove_parenthesis_legend()
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_4_Bridging_and_sample.jpg", scale = 2.5)
 
 # Figure 5 – Plate control line plots ==========================================
 # Bridging and Sample data
 
-bridge_control_plots <- plate_control_plots(bridge_controls)
-do.call(plot_grid, c(bridge_control_plots, ncol = 1, align = "hv"))
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Bridge_controls.jpg", scale = 2.5)
-
-sample_control_plots <- plate_control_plots(sample_controls)
-do.call(plot_grid, c(sample_control_plots, ncol = 1, align = "hv"))
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Sample_controls.jpg", scale = 2.5)
+log_toggle <- T
+all_controls <- plate_control_plots(bridge_controls, sample_controls, log_toggle)
+# do.call(cowplot::plot_grid, c(plate_control_plots, ncol = 1, align = "hv"))
+all_controls[[1]] %>% ggplotly()
+all_controls[[2]] %>% ggplotly()
+all_controls[[3]] %>% ggplotly()
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_5_Bridge_controls.jpg", scale = 2.5)
 
 # Figure 6 – Mean and Median MFI per plate Lineplots ===========================
-# Get mean median per plate
-sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data)
-
+# Get mean median per selection. Either date, week or plate.id
 # Sample data
-x_axis <- "Date"
-x_axis <- "Week"
-x_axis <- "Plate_daywise"
-x_axis <- "Plate.id"
+x_axis_selection <- "Date"
+x_axis_selection <- "Week"
+x_axis_selection <- "Plate.id"
+
+sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data, x_axis_selection)
 
 log_toggle <- T
 
-Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, x_axis = x_axis, log_toggle)
-do.call(plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_6_Sample_mm.jpg", scale = 2.5)
+Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, log_toggle)
+Sample_MM_per_plate[[1]] %>% ggplotly()
+# do.call(cowplot::plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_6_Sample_mm.jpg", scale = 2.5)
 
 # Figure 7 – KT-3 dotplots =====================================================
 # Bridging data only
-KT3_lineplot(bridge_controls)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_7_Bridging_KT-3.jpg", scale = 2.5)
+
+log_toggle <- T
+KT3_lineplot(bridge_controls, log_toggle)
+
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_7_Bridging_KT-3.jpg", scale = 2.5)
 
 # Figure 8 – GST Beeswarm plot =================================================
 
 # Bridging data
 # TODO Filtering is only for now, because of bad dummy data
 bridge_data %>% 
-    rename_all(recode, "Gst Tag" = "Gst.Tag") %>%
-    filter(Gst.Tag < 750) %>% 
+    filter(GST.tag < 750) %>% 
     GST_bees()
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
 
 # Sample data
-GST_violins(sample_data)
-ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Sample_violins.jpg", scale = 2.5)
+GST_bees(sample_data)
+# ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Sample_violins.jpg", scale = 2.5)
