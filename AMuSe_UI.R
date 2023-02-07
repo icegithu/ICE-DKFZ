@@ -358,7 +358,8 @@ server <- function(input, output, session) {
   })
   
   output$Blank_Bridging  <- renderPlotly({
-      blank_lines(loaded_files$Bridge_controls)
+      date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
+      blank_lines(loaded_files$Bridge_controls, date_as_number)
   })
   
   ## TAB 3 Temperature====
