@@ -749,7 +749,7 @@ GST_bees <- function(df){
                       show.legend = F, color = "black", width = rel(0.5)) + 
         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
         labs(x = "", y = "GST Tag", color = "Plate No. Daywise") 
-
+    
     return(fix_jpeg_download(ggplotly(plot), "GST_Sample"))
     
 }

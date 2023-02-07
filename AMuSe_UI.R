@@ -35,15 +35,28 @@ source(paste0(FUNCTIONS_DIR,"/","Amuse_Functions.R"))
 
 ui <- fluidPage(
   
-  themeSelector(),
+  theme = shinytheme("superhero"),
   
   titlePanel("AMuSe"),
-
+  tags$head(tags$style(".shiny-notification {
+              height: 100px;
+              width: 800px;
+              position:fixed;
+              top: calc(50% - 50px);;
+              left: calc(50% - 400px);;
+            }
+            pre.shiny-text-output {
+            word-wrap: normal;
+            background-color: #0000;
+            color: white;
+             }")),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
-                       tags$div(tags$p()),
-                       tags$div(tags$p()),
-                       actionButton("create_summaries", "Update files"), 
+                       tags$div(tags$br(),tags$br()),
+                       fluidRow(
+                        column(8,actionButton("create_summaries", "Update files")),
+                        column(4,actionButton('all_weeks_button', "Create all weeks summary", icon = icon("download")),)
+                       ),
                        tags$div(tags$p()),
                        verbatimTextOutput("files_created_text"),
                        tags$div(tags$p()),
@@ -57,11 +70,81 @@ ui <- fluidPage(
                        ),
                        
               ),
+              tabPanel("Bead Counts",
+                       tags$h2("Bead Counts"),
+                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
+                       tags$h3("Mean Count Bridging"),
+                       actionButton('download_box_count_bridge', "Download Count Bridge", icon = icon("download")),
+                       plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH_LONG),
+                       tags$h3("Mean Count Sample"),
+                       actionButton('download_box_count_sample', "Download Count Sample", icon = icon("download")),
+                       plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH_LONG),
+                       
+              ),
+              tabPanel("Blank Values",
+                       tags$h2("Blank Values"),
+                       airDatepickerInput("blank_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
+                       tags$h3("Bridging Data"),
+                       actionButton("download_blank_bridge", "Download Bridge", icon = icon("download")),
+                       plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH_LONG),
+                       tags$h3("Sample Data"),
+                       actionButton("download_blank_sample", "Download Sample", icon = icon("download")),
+                       plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH_LONG),
+              ),
+              tabPanel("Temperature",
+                       tags$h2("Temperature delta for Sample and Bridging Data"),
+                       tags$h3("Combined Data"),
+                       actionButton("download_deltaT", "Download", icon = icon("download")),
+                       plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH_SHORT),
+              ),
+              tabPanel("Plates Controls",
+                       tags$h2("Plates Controls"),
+                       tags$h3("Bridging Data"),
+                       fluidRow(
+                           column(2, actionButton("download_bridge_control_1", "Download Bridge 1", icon = icon("download")),),
+                           column(2, actionButton("download_bridge_control_2", "Download Bridge 2", icon = icon("download")),),
+                           column(2, actionButton("download_bridge_control_3", "Download Bridge 3", icon = icon("download")),),
+                           column(2, div(id='my_log', materialSwitch(inputId = "platecontrol_log", value = F,status = "danger", label = "Log Scale")),),
+                       ),
+                       plotlyOutput(outputId = "bridge_control_1", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "bridge_control_2", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "bridge_control_3", width = PLOT_WIDTH_LONG),
+                       tags$div(tags$p()),
+                       tags$div(tags$p()),
+                       tags$h3("Sample Data"),
+                       fluidRow(
+                           column(2, actionButton("download_sample_control_1", "Download Sample 1", icon = icon("download")),),
+                           column(2, actionButton("download_sample_control_2", "Download Sample 2", icon = icon("download")),),
+                           column(2, actionButton("download_sample_control_3", "Download Sample 3", icon = icon("download")),),
+                       ),
+                       plotlyOutput(outputId = "sample_control_1", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "sample_control_2", width = PLOT_WIDTH_LONG),
+                       plotlyOutput(outputId = "sample_control_3", width = PLOT_WIDTH_LONG),
+              ),
+              tabPanel("KT3",
+                       tags$h2("KT3"),
+                       tags$h3("Bridging Data"),
+                       fluidRow(
+                        column(2, actionButton("download_KT3_bridge", "Download KT3", icon = icon("download")),),
+                        column(2, div(id='my_log', materialSwitch(inputId = "KT3_log", value = F,status = "danger", label = "Log Scale")),),
+                       ),
+                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT), 
+              ),
+              
+              tabPanel("GST",
+                       tags$h2("GST"),
+                       tags$h3("Bridging Data"),
+                       actionButton("download_GST_bridge", "Download Bridge", icon = icon("download")),
+                       plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH_LONG), 
+                       tags$h3("Sample Data"),
+                       actionButton("download_GST_sample", "Download Sample", icon = icon("download")),
+                       plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH_LONG),
+              ),
               tabPanel("MFI Bridging",
                        tags$h2("Line plots Bridging data"),
                        fluidRow(
                            column(4, align = "left",
-                                  downloadButton("download_MFI_bridge_mean", "Download Mean Plot"),
+                                  actionButton("download_MFI_bridge_mean", "Download Mean Plot", icon = icon("download")),
                            ),
                            column(2, align = "left",
                                div(id='my_log', materialSwitch(inputId = "log_linear", value = F,
@@ -71,91 +154,27 @@ ui <- fluidPage(
                        tags$h3("Mean MFI Bridging data"),
                        plotlyOutput(outputId = "Mean_MFI_Bridging", width = PLOT_WIDTH_LONG),
                        tags$h3("Median MFI Bridging data"),
-                       downloadButton("download_MFI_bridge_median", "Download Median Plot"),
+                       actionButton("download_MFI_bridge_median", "Download Median Plot", icon = icon("download")),
                        plotlyOutput(outputId = "Median_MFI_Bridging", width = PLOT_WIDTH_LONG),
               ),
-              tabPanel("Counts",
-                       tags$h2("Box plots of Sample and Bridging Data"),
-                       airDatepickerInput("date_boxplot", "Select individual dates:", multiple = F, inline = T,firstDay = 1),
-                       tags$h3("Mean Count Bridging"),
-                       downloadButton("download_box_count_bridge", "Download Count Bridge"),
-                       plotlyOutput(outputId = "Mean_Count_Bridging", width = PLOT_WIDTH_LONG),
-                       tags$h3("Mean Count Sample"),
-                       downloadButton("download_box_count_sample", "Download Count Sample"),
-                       plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH_LONG),
-
-              ),
-              tabPanel("Blank Values",
-                       tags$h2("Blank Values"),
-                       tags$h3("Sample Data"),
-                       downloadButton("download_blank_sample", "Download Sample"),
-                       plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH_LONG),
-                       tags$h3("Bridging Data"),
-                       downloadButton("download_blank_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "Blank_Bridging", width = PLOT_WIDTH_LONG),
-              ),
-              tabPanel("Temperature",
-                       tags$h2("Temperature delta for Sample and Bridging Data"),
-                       tags$h3("Combined Data"),
-                       downloadButton("download_deltaT", "Download"),
-                       plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH_SHORT),
-              ),
-              tabPanel("Control Plates",
-                       tags$h2("Control Plates"),
-                       tags$h3("Bridging Data"),
-                       fluidRow(
-                           column(2, downloadButton("download_bridge_control_1", "Download Bridge 1"),),
-                           column(2, downloadButton("download_bridge_control_2", "Download Bridge 2"),),
-                           column(2, downloadButton("download_bridge_control_3", "Download Bridge 3"),)
-                       ),
-                       plotlyOutput(outputId = "bridge_control_1", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "bridge_control_2", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "bridge_control_3", width = PLOT_WIDTH_LONG),
-                       tags$div(tags$p()),
-                       tags$div(tags$p()),
-                       tags$h3("Sample Data"),
-                       fluidRow(
-                           column(2, downloadButton("download_sample_control_1", "Download Sample 1"),),
-                           column(2, downloadButton("download_sample_control_2", "Download Sample 2"),),
-                           column(2, downloadButton("download_sample_control_3", "Download Sample 3"),)
-                       ),
-                       plotlyOutput(outputId = "sample_control_1", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "sample_control_2", width = PLOT_WIDTH_LONG),
-                       plotlyOutput(outputId = "sample_control_3", width = PLOT_WIDTH_LONG),
-              ),
-              tabPanel("MFI Sample",
+              tabPanel("MFI Samples",
                        tags$h2("Line plots for MFI per plate"),
                        fluidRow(
                            column(2,div(id='my_log', materialSwitch(inputId = "mm_log_toggle", value = F,
                                                                     status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Daywise" = "Date", "Weekwise" = "Week","Per plate" = "Plate.id","Plate daywise" = "Plate_daywise"), inline=T)
+                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week","Plate daywise" = "Plate_daywise"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
-                       downloadButton("download_MFI_perplate_mean", "Download Mean"),
+                       actionButton("download_MFI_perplate_mean", "Download Mean", icon = icon("download")),
                        plotlyOutput(outputId = "Mean_MFI_perplate", width = PLOT_WIDTH_LONG),
                        tags$h3("Median MFI"),
-                       downloadButton("download_MFI_perplate_median", "Download Median"),
+                       actionButton("download_MFI_perplate_median", "Download Median", icon = icon("download")),
                        plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH_LONG),
               ),
-              tabPanel("KT3 Plot",
-                       tags$h2("KT3"),
-                       tags$h3("Bridging Data"),
-                       downloadButton("download_KT3_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT), 
-              ),
-              tabPanel("GST Plot",
-                       tags$h2("GST"),
-                       tags$h3("Sample Data"),
-                       downloadButton("download_GST_sample", "Download Sample"),
-                       plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH_LONG),
-                       tags$h3("Bridging Data"),
-                       downloadButton("download_GST_bridge", "Download Bridge"),
-                       plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH_LONG), 
-              ),
-              
+              tags$script(src="scripts.js"),      
   )
 )
 
@@ -203,8 +222,11 @@ server <- function(input, output, session) {
     })
 
   observeEvent(input$create_summaries,{
-    sample_info <- read.xlsx(SAMPLE_INFO_FILE)
-    bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+      withProgress(message = "Updating files ...",{
+        sample_info <- read.xlsx(SAMPLE_INFO_FILE)
+        incProgress(0.5)
+        bridge_info <- read.xlsx(BRIDGE_INFO_FILE)
+      })
     # run script to gather files
     updated_files <- c("Sample files:")
     updated_files <- c(updated_files, read_in_sample_data(paste0(RAW_DATA_DIR), sample_info))
@@ -226,6 +248,30 @@ server <- function(input, output, session) {
     
   })
   
+  observeEvent(input$all_weeks_button, {
+      all_files_list <- list.files(SUMMARY_DIR)
+      Sample_df <- data.frame()
+      Bridge_df <- data.frame()
+      withProgress(message = 'Gathering data...',{
+          for (i in 1:length(all_files_list)){
+              if(str_detect(all_files_list[i],"Sample_data")){
+                  myDF <-read.csv(paste0(SUMMARY_DIR,"/",all_files_list[i]), header = T)
+                  Sample_df <- rbind(Sample_df, myDF)
+              }
+              if(str_detect(all_files_list[i],"Bridging_data")){
+                  myDF <-read.csv(paste0(SUMMARY_DIR,"/",all_files_list[i]), header = T)
+                  Bridge_df <- rbind(Bridge_df, myDF)
+              }
+              incProgress(1/length(all_files_list))
+          }
+      })
+      write_csv(x = Sample_df, file = paste0(SUMMARY_DIR,"/","all_sample.csv"))
+      write_csv(x = Bridge_df, file = paste0(SUMMARY_DIR,"/","all_bridging.csv"))
+      showModal(modalDialog(paste0("Files created on ",SUMMARY_DIR),easyClose = T))
+      
+  })
+  
+  # Text rendering functions ====
   output$files_to_load_text <- renderText({ 
       if (length(dates_to_load$dates)>0){
           paste0("The following weeks will be loaded:\n",
@@ -251,20 +297,22 @@ server <- function(input, output, session) {
     all_files_list <- list.files(SUMMARY_DIR)
     Sample_df <- data.frame()
     Bridge_df <- data.frame()
-    for (i in 1:length(dates_to_load$dates)){
-      selected_date <- dates_to_load$dates[i]
-      sample_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Sample")]
-      if(! is_empty(sample_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
-        Sample_df <- rbind(Sample_df, myDF)
-      }
-      bridge_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Bridging")]
-      if(! is_empty(bridge_file)){
-        myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
-        Bridge_df <- rbind(Bridge_df, myDF)
-      }
-    }
-
+    withProgress(message = 'Loading data...',{
+        for (i in 1:length(dates_to_load$dates)){
+          selected_date <- dates_to_load$dates[i]
+          sample_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Sample")]
+          if(! is_empty(sample_file)){
+            myDF <-read.csv(paste0(SUMMARY_DIR,"/",sample_file), header = T)
+            Sample_df <- rbind(Sample_df, myDF)
+          }
+          bridge_file <- all_files_list[str_detect(all_files_list, selected_date) & str_detect(all_files_list,"Bridging")]
+          if(! is_empty(bridge_file)){
+            myDF <-read.csv(paste0(SUMMARY_DIR,"/",bridge_file), header = T)
+            Bridge_df <- rbind(Bridge_df, myDF)
+          }
+          incProgress(1/length(dates_to_load$dates))
+        }
+    })
     loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
     loaded_files$Bridge <- Bridge_df
     loaded_files$Bridge_controls <- get_controls(Bridge_df) 
@@ -286,218 +334,80 @@ server <- function(input, output, session) {
           value = calendar_options$highlightedDates,
           options = calendar_options
       )
+      updateAirDateInput(
+          session = session,
+          "blank_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
   })
 
 
   # Call_plotting functions ====
   
-  ## TAB 1 Bridging Data====
-  output$Mean_MFI_Bridging  <- renderPlotly({
-      fix_jpeg_download(
-      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                         input$log_linear)[["Mean"]])),"MFI_bridge_mean") 
-  })
-  output$download_MFI_bridge_mean <- downloadHandler(
-      filename = "MFI_bridge_mean.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,input$log_linear)[["Mean"]]))),file)
-          
-      }
-  )
-
-  output$Median_MFI_Bridging  <- renderPlotly({
-      fix_jpeg_download(
-      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                          input$log_linear)[["Median"]])),"MFI_bridge_median")
-  })
-  
-  output$download_MFI_bridge_median <- downloadHandler(
-      filename = "MFI_bridge_median.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,input$log_linear)[["Median"]]))),file)
-          
-      }
-  )
-
-  ## TAB 2 Mean Count box plots====
-  output$Mean_Count_Bridging  <- renderPlotly({
+  ## TAB 1 Mean Count box plots====
+  output$Mean_Count_Bridging  <- renderPlotly({      
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
       if (any(loaded_files$Bridge_mm$Date==date_as_number)){
-        mean_boxplots(loaded_files$Bridge_mm,date_as_number)
+          mean_boxplots(loaded_files$Bridge_mm,date_as_number)
       }
   })
-
+  
   output$Mean_Count_Sample  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
       if (any(loaded_files$Sample_mm$Date==date_as_number)){
           mean_boxplots(loaded_files$Sample_mm,date_as_number)
       }
   })
-
-  output$download_box_count_bridge <- downloadHandler(
-      filename = "Counts_bridge.html",
-      content = function(file) {
-          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
-          htmlwidgets::saveWidget(as_widget(mean_boxplots(loaded_files$Bridge_mm,date_as_number)),file)
-      }
-  )
   
-  output$download_box_count_sample <- downloadHandler(
-      filename = "Counts_sample.html",
-      content = function(file) {
-          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
-          htmlwidgets::saveWidget(as_widget(mean_boxplots(loaded_files$Sample_mm,date_as_number)),file)
-      }
-  )
-  
-  ## TAB 3 Blanks ====
-  
+  ## TAB 2 Blanks ====
   output$Blank_Sample  <- renderPlotly({
       blank_violins(loaded_files$Sample_controls)
   })
-
+  
   output$Blank_Bridging  <- renderPlotly({
-      blank_lines(loaded_files$Bridge_controls)
+      remove_hover_duplicate(blank_lines(loaded_files$Bridge_controls))
   })
   
-  output$download_blank_sample <- downloadHandler(
-      filename = "Blanks_sample.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(blank_violins(loaded_files$Sample_controls)),file)
-      }
-  )
+  ## TAB 3 Temperature====
   
-  output$download_blank_bridge <- downloadHandler(
-      filename = "Blanks_bridge.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(blank_lines(loaded_files$Bridge_controls)),file)
-      }
-  )
-  
-  ## TAB 4 Temperature====
-
   output$DeltaT_Combined  <- renderPlotly({
       remove_parenthesis_legend(delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))
   })
   
-  output$download_deltaT <- downloadHandler(
-      filename = "DeltaT.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_parenthesis_legend(
-             delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge))),file)
-      }
-  )
-  
-  ## TAB 5 Control plates====
+  ## TAB 4 Control plates====
   
   output$bridge_control_1  <- renderPlotly({
-     ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]]))
   })
-  
-  output$download_bridge_control_1  <- downloadHandler(
-      filename = "Bridge_control_1.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[1]])),file)
-      }
-  )
   
   output$bridge_control_2  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]]))
   })
-  
-  output$download_bridge_control_2  <- downloadHandler(
-      filename = "Bridge_control_2.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[2]])),file)
-      }
-  )
   
   output$bridge_control_3  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]]))
   })
-  
-  output$download_bridge_control_3  <- downloadHandler(
-      filename = "Bridge_control_3.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Bridge_controls)[[3]])),file)
-      }
-  )
   
   output$sample_control_1  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]]))
   })
-  
-  output$download_sample_control_1  <- downloadHandler(
-      filename = "Sample_control_1.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[1]])),file)
-      }
-  )
   
   output$sample_control_2  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]]))
   })
-  
-  output$download_sample_control_2  <- downloadHandler(
-      filename = "Sample_control_2.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[2]])),file)
-      }
-  )
   
   output$sample_control_3  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]])
+      remove_hover_duplicate(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]]))
   })
   
-  output$download_sample_control_3  <- downloadHandler(
-      filename = "Sample_control_3.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(ggplotly(plate_control_plots(loaded_files$Sample_controls)[[3]])),file)
-      }
-  )
-  
-  ## TAB 6 Sample MM ====
-  
-  output$Mean_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))
-  })
 
-  output$Median_MFI_perplate  <- renderPlotly({
-      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))
-  })
-  
-  output$download_MFI_perplate_mean <- downloadHandler(
-      filename = paste0("MFI",input$perplate_display,"_mean.html"),
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))),file)
-      }
-  )
-  
-  output$download_MFI_perplate_median <- downloadHandler(
-      filename = paste0("MFI",input$perplate_display,"_median.html"),
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(remove_hover_duplicate(
-              ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))),file)
-      }
-  )
-  
-  ## TAB 7 KT3 ====
+  ## TAB 5 KT3 ====
   output$KT3_Bridge  <- renderPlotly({
       KT3_lineplot(loaded_files$Bridge_controls)
   })
   
-  output$download_KT3_bridge <- downloadHandler(
-      filename = "KT3_Bridge.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(KT3_lineplot(loaded_files$Bridge_controls)),file)
-      }
-  )
-  
-  ## TAB 8 GST====
-  
+  ## TAB 6 GST====
   output$GST_Sample  <- renderPlotly({
       GST_violins(loaded_files$Sample)
   })
@@ -508,20 +418,30 @@ server <- function(input, output, session) {
       GST_bees(bridge_data)
   })
   
-  output$download_GST_sample <- downloadHandler(
-      filename = "GST_Sample.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(GST_violins(loaded_files$Sample)),file)
-      }
-  )
   
-  output$download_GST_bridge <- downloadHandler(
-      filename = "GST_Bridge.html",
-      content = function(file) {
-          htmlwidgets::saveWidget(as_widget(GST_bees(loaded_files$Bridge)),file)
-      }
-  )
+  ## TAB 7 Bridging Data====
+  output$Mean_MFI_Bridging  <- renderPlotly({
+      fix_jpeg_download(
+      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                         input$log_linear)[["Mean"]])),"MFI_bridge_mean") 
+  })
+
+  output$Median_MFI_Bridging  <- renderPlotly({
+      fix_jpeg_download(
+      remove_hover_duplicate(ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
+                                          input$log_linear)[["Median"]])),"MFI_bridge_median")
+  })
   
+  ## TAB 8 Sample MM ====
+  
+  output$Mean_MFI_perplate  <- renderPlotly({
+      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Mean"]]))
+  })
+
+  output$Median_MFI_perplate  <- renderPlotly({
+      remove_hover_duplicate(ggplotly(mm_per_plate_lineplots(loaded_files$Sample_mm_per_plate,input$perplate_display,input$mm_log_toggle)[["Median"]]))
+  })
+
 }
 
 
