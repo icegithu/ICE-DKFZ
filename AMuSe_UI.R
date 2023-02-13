@@ -93,6 +93,7 @@ ui <- fluidPage(
               ),
               tabPanel("Plates Controls",
                        tags$h2("Plates Controls"),
+                       airDatepickerInput("control_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        fluidRow(
                            column(2, actionButton("download_control_1", "Download Control 1", icon = icon("download")),),
@@ -112,6 +113,7 @@ ui <- fluidPage(
               ),
               tabPanel("KT3",
                        tags$h2("KT3"),
+                       airDatepickerInput("KT3_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        fluidRow(
                         column(2, actionButton("download_KT3_bridge", "Download KT3", icon = icon("download")),),
@@ -123,6 +125,7 @@ ui <- fluidPage(
               
               tabPanel("GST",
                        tags$h2("GST"),
+                       airDatepickerInput("GST_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        actionButton("download_GST_bridge", "Download Bridge", icon = icon("download")),
                        plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH_LONG), 
@@ -154,11 +157,12 @@ ui <- fluidPage(
               tabPanel("MFI Samples",
                        tags$h2("Line plots for MFI per plate"),
                        fluidRow(
+                           column(4, airDatepickerInput("Samples_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),),
                            column(2,div(id='my_log', materialSwitch(inputId = "mm_log_toggle", value = F,
                                                                     status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week","Plate daywise" = "Plate_daywise"), inline=T)
+                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
@@ -332,6 +336,30 @@ server <- function(input, output, session) {
       updateAirDateInput(
           session = session,
           "blank_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "control_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "KT3_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "Samples_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "GST_calendar",
           value = calendar_options$highlightedDates,
           options = calendar_options
       )
