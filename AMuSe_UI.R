@@ -313,12 +313,16 @@ server <- function(input, output, session) {
           incProgress(1/length(dates_to_load$dates))
         }
     })
-    loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
+    if(!is_empty(Bridge_df)){
+        loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
+        loaded_files$Bridge_controls <- get_controls(Bridge_df) 
+    }
     loaded_files$Bridge <- Bridge_df
-    loaded_files$Bridge_controls <- get_controls(Bridge_df) 
-    loaded_files$Sample_mm <- get_mean_median(Sample_df)
+    if(!is_empty(Sample_df)){
+        loaded_files$Sample_mm <- get_mean_median(Sample_df)
+        loaded_files$Sample_controls <- get_controls(Sample_df) 
+    }
     loaded_files$Sample <- Sample_df
-    loaded_files$Sample_controls <- get_controls(Sample_df) 
 
   })
   
