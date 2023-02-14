@@ -475,29 +475,29 @@ blank_lines <- function(df, selected_date = ""){
     
 }    
 
-blank_bees <- function(df, selected_date = ""){
-    
-    # df <- sample_controls # debug
-    # selected_date <- unique(df$Date)[1:4] #debug
-    # head(df)
-    
-    df <- df %>% filter(Sample.ID == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
-                            grepl(paste(selected_date, collapse = "|"), Date))
-    
-    df_median <- df %>% group_by(Analyte) %>%
-        summarise(MFI = median(MFI, na.rm = T))
-    
-    plot <-
-        ggplot(df, aes(x = Analyte, y = MFI)) + 
-        # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
-        geom_beeswarm(cex = rel(0.5), aes(color = Plate.ID, label = Date)) +
-        geom_crossbar(data = df_median, width = rel(0.5), size = rel(0.5), aes(ymin = MFI, ymax = MFI), show.legend = F, color = "black")+
-        labs(color = "Plate.ID", x = "")
-    
-    
-    return(fix_jpeg_download(ggplotly(plot), "blanks"))
-    
-}    
+# blank_bees <- function(df, selected_date = ""){
+#     
+#     # df <- sample_controls # debug
+#     # selected_date <- unique(df$Date)[1:4] #debug
+#     # head(df)
+#     
+#     df <- df %>% filter(Sample.ID == "blank" & !grepl("Total.Events", Analyte, ignore.case = T) &
+#                             grepl(paste(selected_date, collapse = "|"), Date))
+#     
+#     df_median <- df %>% group_by(Analyte) %>%
+#         summarise(MFI = median(MFI, na.rm = T))
+#     
+#     plot <-
+#         ggplot(df, aes(x = Analyte, y = MFI)) + 
+#         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
+#         geom_beeswarm(cex = rel(0.5), aes(color = Plate.ID, label = Date)) +
+#         geom_crossbar(data = df_median, width = rel(0.5), size = rel(0.5), aes(ymin = MFI, ymax = MFI), show.legend = F, color = "black")+
+#         labs(color = "Plate.ID", x = "")
+#     
+#     
+#     return(fix_jpeg_download(ggplotly(plot), "blanks"))
+#     
+# }    
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
@@ -705,29 +705,6 @@ KT3_lineplot <- function(df, log_toggle = F){
     return(fix_jpeg_download(ggplotly(plot),"KT3_Plot","short"))
     
 }    
-
-# Figure 8 – GST Beeswarm ======================================================
-# Draw the GST bees function
-# GST_bees <- function(df){
-#     
-#     # df <- bridge_data # debug
-#     
-#     df <- df %>% filter(Data_type == "MFI")
-#     df$Plate.id <- as.character(df$Plate.id)
-#     df$Date <- factor(df$Date)
-#     head(df)
-#     
-#     plot <-
-#         ggplot(df, aes(x = Date, y = GST.tag, color = Plate.id, label = Well)) + 
-#         geom_beeswarm(size = 2) + labs(x = "", y = "GST Tag", color = "Plate ID") 
-#     
-#     return(fix_jpeg_download(ggplotly(plot),"GST_Bridge"))
-#     
-# }    
-
-# findoutlier <- function(x) {
-#     return(x < quantile(x, .25) - 1.5*IQR(x) | x > quantile(x, .75) + 1.5*IQR(x))
-# }
 
 GST_bees <- function(df){
     
