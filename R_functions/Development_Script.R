@@ -154,7 +154,6 @@ KT3_lineplot(bridge_controls, log_toggle, selected_date)
 (selected_date <- unique(sort(c(bridge_data$Date, sample_data$Date)))[1:5])
 
 bridge_data %>% 
-    filter(GST.tag < 750) %>%
     GST_bees(selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
 

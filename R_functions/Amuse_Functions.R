@@ -48,6 +48,14 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         
         # week <- 1 # debug
         
+        # Delete old files to keep only one combo file per week per data type (sample/bridge)
+        old_files <- list.files(paste0(path_to_file, "/Combined_Output"), pattern = "Sample", full.names = T)
+        old_files <- old_files[grepl(to_read_in_weeks[week], old_files)]
+        
+        if (length(old_files) != 0) {
+            unlink(old_files, force = T)
+        }
+        
         (current_path_samples <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
         (current_path_samples <- current_path_samples[grepl(to_read_in_weeks[week], current_path_samples)])
         
@@ -213,6 +221,14 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     for (week in seq_along(to_read_in_weeks)) {
         
         # week <- 1 # debug
+        
+        # Delete old files to keep only one combo file per week per data type (sample/bridge)
+        old_files <- list.files(paste0(path_to_file, "/Combined_Output"), pattern = "Bridging", full.names = T)
+        old_files <- old_files[grepl(to_read_in_weeks[week], old_files)]
+        
+        if (length(old_files) != 0) {
+            unlink(old_files, force = T)
+        }
         
         (current_path <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
         (current_path <- current_path[grepl(to_read_in_weeks[week], current_path)])
@@ -724,7 +740,7 @@ GST_bees <- function(df, selected_date = ""){
     # df <- bridge_data #debug
     
     df <-
-        df %>% filter(Data.Type == "MFI" & Date %in% selected_date) %>% 
+        df %>% filter(Data.Type == "MFI" & Date %in% selected_date & Sample.ID != "KT3") %>% 
         mutate(across(c(Plate.ID, Plate.daywise, Date), factor))
     
     # head(df)
@@ -735,7 +751,7 @@ GST_bees <- function(df, selected_date = ""){
     plot <-
         ggplot(df, aes(x = Date, y = GST.tag)) + 
         geom_beeswarm(cex = rel(0.5), alpha = 0.7,
-                      aes(color = Plate.daywise, text = paste("Plate.ID", Plate.ID), label = Well)) +
+                      aes(color = Plate.daywise, text = paste("Plate.ID:", Plate.ID, "\nSample.ID:", Sample.ID), label = Well)) +
         geom_crossbar(data = df_median, size = rel(0.4), aes(ymin = GST.tag, ymax = GST.tag), 
                       show.legend = F, color = "black", width = rel(0.5)) + 
         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
