@@ -38,7 +38,7 @@ ui <- fluidPage(
   theme = shinytheme("superhero"),
   
   titlePanel("AMuSe"),
-  tags$head(tags$style(css_style)),
+  tags$head(tags$style(HTML(css_style))),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
                        tags$div(tags$br(),tags$br()),
@@ -68,6 +68,8 @@ ui <- fluidPage(
                        tags$h3("Mean Count Sample"),
                        actionButton('download_box_count_sample', "Download Count Sample", icon = icon("download")),
                        plotlyOutput(outputId = "Mean_Count_Sample", width = PLOT_WIDTH_LONG),
+                       downloadLink('download_box_count_bridge_html', 'Download Count Bridge HTML'),
+                       downloadLink('download_box_count_sample_html', 'Download Count Sample HTML'),
                        
               ),
               tabPanel("Blank Values",
@@ -79,15 +81,20 @@ ui <- fluidPage(
                        tags$h3("Sample Data"),
                        actionButton("download_blank_sample", "Download Sample", icon = icon("download")),
                        plotlyOutput(outputId = "Blank_Sample", width = PLOT_WIDTH_LONG),
+                       downloadLink("download_blank_bridge_html", "Download Bridge HTML"),
+                       downloadLink("download_blank_sample_html", "Download Sample HTML"),
               ),
               tabPanel("Temperature",
                        tags$h2("Temperature delta for Sample and Bridging Data"),
+                       airDatepickerInput("temperature_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Combined Data"),
                        actionButton("download_deltaT", "Download", icon = icon("download")),
                        plotlyOutput(outputId = "DeltaT_Combined", width = PLOT_WIDTH_SHORT),
+                       downloadLink("download_deltaT_html", "Download HTML"),
               ),
               tabPanel("Plates Controls",
                        tags$h2("Plates Controls"),
+                       airDatepickerInput("control_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        fluidRow(
                            column(2, actionButton("download_control_1", "Download Control 1", icon = icon("download")),),
@@ -101,25 +108,33 @@ ui <- fluidPage(
                        plotlyOutput(outputId = "control_2", width = PLOT_WIDTH_LONG),
                        tags$div(tags$br(),tags$br()),
                        plotlyOutput(outputId = "control_3", width = PLOT_WIDTH_LONG),
+                       downloadLink("download_control_1_html", "Download Control 1 HTML"),
+                       downloadLink("download_control_2_html", "Download Control 2 HTML"),
+                       downloadLink("download_control_3_html", "Download Control 3 HTML"),
               ),
               tabPanel("KT3",
                        tags$h2("KT3"),
+                       airDatepickerInput("KT3_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        fluidRow(
                         column(2, actionButton("download_KT3_bridge", "Download KT3", icon = icon("download")),),
                         column(2, div(id='my_log', materialSwitch(inputId = "KT3_log", value = F,status = "danger", label = "Log Scale")),),
                        ),
-                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT), 
+                       plotlyOutput(outputId = "KT3_Bridge", width = PLOT_WIDTH_SHORT),
+                       downloadLink("download_KT3_bridge_html", "Download KT3 HTML"),
               ),
               
               tabPanel("GST",
                        tags$h2("GST"),
+                       airDatepickerInput("GST_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        tags$h3("Bridging Data"),
                        actionButton("download_GST_bridge", "Download Bridge", icon = icon("download")),
                        plotlyOutput(outputId = "GST_Bridge", width = PLOT_WIDTH_LONG), 
                        tags$h3("Sample Data"),
                        actionButton("download_GST_sample", "Download Sample", icon = icon("download")),
                        plotlyOutput(outputId = "GST_Sample", width = PLOT_WIDTH_LONG),
+                       downloadLink("download_GST_bridge_html", "Download Bridge HTML"),
+                       downloadLink("download_GST_sample_html", "Download Sample HTML"),
               ),
               tabPanel("MFI Bridging",
                        tags$h2("Line plots Bridging data"),
@@ -137,15 +152,18 @@ ui <- fluidPage(
                        tags$h3("Median MFI Bridging data"),
                        actionButton("download_MFI_bridge_median", "Download Median Plot", icon = icon("download")),
                        plotlyOutput(outputId = "Median_MFI_Bridging", width = PLOT_WIDTH_LONG),
+                       downloadLink("download_MFI_bridge_mean_html", "Download Mean Plot HTML"),
+                       downloadLink("download_MFI_bridge_median_html", "Download Median Plot HTML"),
               ),
               tabPanel("MFI Samples",
                        tags$h2("Line plots for MFI per plate"),
                        fluidRow(
+                           column(4, airDatepickerInput("Samples_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),),
                            column(2,div(id='my_log', materialSwitch(inputId = "mm_log_toggle", value = F,
                                                                     status = "danger", label = "Log Scale"))),
                            column(2, align="right",tags$h3("Display")),
                            column(4, align="left",
-                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week","Plate daywise" = "Plate_daywise"), inline=T)
+                              radioButtons("perplate_display","", c("Per plate" = "Plate.id", "Daywise" = "Date", "Weekwise" = "Week"), inline=T)
                            ),
                        ),
                        tags$h3("Mean MFI"),
@@ -154,6 +172,8 @@ ui <- fluidPage(
                        tags$h3("Median MFI"),
                        actionButton("download_MFI_perplate_median", "Download Median", icon = icon("download")),
                        plotlyOutput(outputId = "Median_MFI_perplate", width = PLOT_WIDTH_LONG),
+                       downloadLink("download_MFI_perplate_mean_html", "Download Mean HTML"),
+                       downloadLink("download_MFI_perplate_median_html", "Download Median HTML"),
               ),
               tags$script(src="scripts.js"),      
   )
@@ -246,9 +266,10 @@ server <- function(input, output, session) {
               incProgress(1/length(all_files_list))
           }
       })
-      write_csv(x = Sample_df, file = paste0(SUMMARY_DIR,"/","all_sample.csv"))
-      write_csv(x = Bridge_df, file = paste0(SUMMARY_DIR,"/","all_bridging.csv"))
-      showModal(modalDialog(paste0("Files created on ",SUMMARY_DIR),easyClose = T))
+      write_csv(x = Sample_df, file = paste0(SUMMARY_DIR,"/", gsub("-","",Sys.Date()), "_all_sample_data_combined.csv"))
+      write_csv(x = Bridge_df, file = paste0(SUMMARY_DIR,"/",gsub("-","",Sys.Date()), "_all_bridging_data_combined.csv"))
+      showModal(modalDialog(paste0("Files created: ",paste0(SUMMARY_DIR,"/", gsub("-","",Sys.Date()), "_all_sample_data_combined.csv"), "\n", 
+                                   paste0(SUMMARY_DIR,"/",gsub("-","",Sys.Date()), "_all_bridging_data_combined.csv")),easyClose = T))
       
   })
   
@@ -294,12 +315,16 @@ server <- function(input, output, session) {
           incProgress(1/length(dates_to_load$dates))
         }
     })
-    loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
+    if(!is_empty(Bridge_df)){
+        loaded_files$Bridge_mm <- get_mean_median(Bridge_df)
+        loaded_files$Bridge_controls <- get_controls(Bridge_df) 
+    }
     loaded_files$Bridge <- Bridge_df
-    loaded_files$Bridge_controls <- get_controls(Bridge_df) 
-    loaded_files$Sample_mm <- get_mean_median(Sample_df)
+    if(!is_empty(Sample_df)){
+        loaded_files$Sample_mm <- get_mean_median(Sample_df)
+        loaded_files$Sample_controls <- get_controls(Sample_df) 
+    }
     loaded_files$Sample <- Sample_df
-    loaded_files$Sample_controls <- get_controls(Sample_df) 
 
   })
   
@@ -320,6 +345,36 @@ server <- function(input, output, session) {
           value = calendar_options$highlightedDates,
           options = calendar_options
       )
+      updateAirDateInput(
+          session = session,
+          "control_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "KT3_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "Samples_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "GST_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
+      updateAirDateInput(
+          session = session,
+          "temperature_calendar",
+          value = calendar_options$highlightedDates,
+          options = calendar_options
+      )
   })
 
 
@@ -332,6 +387,15 @@ server <- function(input, output, session) {
           mean_boxplots(loaded_files$Bridge_mm,date_as_number)
       }
   })
+  output$download_box_count_bridge_html <- downloadHandler(
+      filename = "bead_counts_bridge.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(mean_boxplots(loaded_files$Bridge_mm,date_as_number))),file)
+
+      }
+  )
   
   output$Mean_Count_Sample  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
@@ -339,82 +403,225 @@ server <- function(input, output, session) {
           mean_boxplots(loaded_files$Sample_mm,date_as_number)
       }
   })
+
+  output$download_box_count_sample_html <- downloadHandler(
+      filename = "bead_counts_sample.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$date_boxplot,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              mean_boxplots(loaded_files$Sample_mm,date_as_number)),file)
+
+      }
+  )
   
   ## TAB 2 Blanks ====
   output$Blank_Sample  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
-      blank_bees(loaded_files$Sample_controls, date_as_number)
+      blank_lines(loaded_files$Sample_controls, date_as_number)
   })
+
+  output$download_blank_sample_html <- downloadHandler(
+      filename = "blank_values_sample.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              blank_lines(loaded_files$Sample_controls, date_as_number)),file)
+
+      }
+  )
   
   output$Blank_Bridging  <- renderPlotly({
       date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
       blank_lines(loaded_files$Bridge_controls, date_as_number)
   })
-  
+
+  output$download_blank_bridge_html <- downloadHandler(
+      filename = "blank_values_bridge.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$blank_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              blank_lines(loaded_files$Bridge_controls, date_as_number)),file)
+
+      }
+  )
+
   ## TAB 3 Temperature====
   
   output$DeltaT_Combined  <- renderPlotly({
-      delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge)
+      date_as_number = as.numeric(str_remove_all(input$temperature_calendar,"-"))
+      delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge, date_as_number)
   })
-  
+
+  output$download_deltaT_html <- downloadHandler(
+      filename = "temperature.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$temperature_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              delta_t_pointplot(loaded_files$Sample, loaded_files$Bridge, date_as_number)),file)
+
+      }
+  )
+
   ## TAB 4 Control plates====
   
   output$control_1  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[1]])
+      date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[1]])
   })
-  
+
+  output$download_control_1_html <- downloadHandler(
+      filename = "control_1.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[1]])),file)
+
+      }
+  )
+
   output$control_2  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[2]])
+      date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[2]])
   })
+
+  output$download_control_2_html <- downloadHandler(
+      filename = "control_2.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[2]])),file)
+
+      }
+  )
   
   output$control_3  <- renderPlotly({
-      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log)[[3]])
+      date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+      ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[3]])
   })
-  
 
-  
+  output$download_control_3_html <- downloadHandler(
+      filename = "control_3.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$control_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(plate_control_plots(loaded_files$Bridge_controls, loaded_files$Sample_controls, input$platecontrol_log, date_as_number)[[3]])),file)
+
+      }
+  )
 
   ## TAB 5 KT3 ====
   output$KT3_Bridge  <- renderPlotly({
-      KT3_lineplot(loaded_files$Bridge_controls, input$KT3_log)
+      date_as_number = as.numeric(str_remove_all(input$KT3_calendar,"-"))
+      KT3_lineplot(loaded_files$Bridge_controls, input$KT3_log, date_as_number)
   })
-  
+
+  output$download_KT3_bridge_html <- downloadHandler(
+      filename = "KT3_bridge.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$KT3_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              KT3_lineplot(loaded_files$Bridge_controls, input$KT3_log, date_as_number)),file)
+
+      }
+  )
+
   ## TAB 6 GST====
   output$GST_Sample  <- renderPlotly({
-      GST_bees(loaded_files$Sample)
+      date_as_number = as.numeric(str_remove_all(input$GST_calendar,"-"))
+      GST_bees(loaded_files$Sample, date_as_number)
   })
+
+  output$download_GST_sample_html <- downloadHandler(
+      filename = "GST_sample.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$GST_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              GST_bees(loaded_files$Sample, date_as_number)),file)
+
+      }
+  )
   
   output$GST_Bridge  <- renderPlotly({
-      # # TODO Only for now:
-      # bridge_data <- loaded_files$Bridge %>% filter(Gst.Tag<750)
-      GST_bees(loaded_files$Bridge)
+      date_as_number = as.numeric(str_remove_all(input$GST_calendar,"-"))
+      GST_bees(loaded_files$Bridge, date_as_number)
   })
-  
+
+  output$download_GST_bridge_html <- downloadHandler(
+      filename = "GST_bridge.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$GST_calendar,"-"))
+          htmlwidgets::saveWidget(as_widget(
+              GST_bees(loaded_files$Bridge, date_as_number)),file)
+
+      }
+  )
   
   ## TAB 7 Bridging Data====
   output$Mean_MFI_Bridging  <- renderPlotly({
       fix_jpeg_download(
       ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
-                                         input$log_linear)[["Mean"]]),"MFI_bridge_mean") 
+                                         input$log_linear)[["Mean"]]),"MFI_bridge_mean")
   })
+
+  output$download_MFI_bridge_mean_html <- downloadHandler(
+      filename = "mean_MFI_bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm, input$log_linear)[["Mean"]])),file)
+
+      }
+  )
 
   output$Median_MFI_Bridging  <- renderPlotly({
       fix_jpeg_download(
       ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                           input$log_linear)[["Median"]]),"MFI_bridge_median")
   })
-  
+
+  output$download_MFI_bridge_median_html <- downloadHandler(
+      filename = "median_MFI_bridge.html",
+      content = function(file) {
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(mean_median_lineplots(loaded_files$Bridge_mm, input$log_linear)[["Median"]])),file)
+
+      }
+  )
+
   ## TAB 8 Sample MM ====
   
   output$Mean_MFI_perplate  <- renderPlotly({
-      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display)
+      date_as_number = as.numeric(str_remove_all(input$Samples_calendar,"-"))
+      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display, date_as_number)
       ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Mean"]])
   })
 
+  output$download_MFI_perplate_mean_html <- downloadHandler(
+      filename = "mean_MFI_bridge_pp.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$Samples_calendar,"-"))
+          Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display, date_as_number)
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Mean"]])),file)
+
+      }
+  )
+
   output$Median_MFI_perplate  <- renderPlotly({
-      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display)
+      date_as_number = as.numeric(str_remove_all(input$Samples_calendar,"-"))
+      Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display, date_as_number)
       ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Median"]])
   })
+
+  output$download_MFI_perplate_median_html <- downloadHandler(
+      filename = "mean_MFI_bridge_pp.html",
+      content = function(file) {
+          date_as_number = as.numeric(str_remove_all(input$Samples_calendar,"-"))
+          Sample_mm_per_plate <- get_mean_median_per_plate(loaded_files$Sample, input$perplate_display, date_as_number)
+          htmlwidgets::saveWidget(as_widget(
+              ggplotly(mm_per_plate_lineplots(Sample_mm_per_plate, input$mm_log_toggle)[["Median"]])),file)
+
+      }
+  )
 
 }
 
