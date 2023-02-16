@@ -138,7 +138,6 @@ ui <- fluidPage(
               ),
               tabPanel("MFI Bridging",
                        tags$h2("Line plots Bridging data"),
-                       airDatepickerInput("bridging_calendar", "Select dates:", multiple = T, inline = T,firstDay = 1),
                        fluidRow(
                            column(4, align = "left",
                                   actionButton("download_MFI_bridge_mean", "Download Mean Plot", icon = icon("download")),
@@ -372,12 +371,6 @@ server <- function(input, output, session) {
       )
       updateAirDateInput(
           session = session,
-          "bridging_calendar",
-          value = calendar_options$highlightedDates,
-          options = calendar_options
-      )
-      updateAirDateInput(
-          session = session,
           "temperature_calendar",
           value = calendar_options$highlightedDates,
           options = calendar_options
@@ -565,7 +558,6 @@ server <- function(input, output, session) {
   
   ## TAB 7 Bridging Data====
   output$Mean_MFI_Bridging  <- renderPlotly({
-      date_as_number = as.numeric(str_remove_all(input$bridging_calendar,"-"))
       fix_jpeg_download(
       ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                          input$log_linear)[["Mean"]]),"MFI_bridge_mean")
@@ -574,7 +566,6 @@ server <- function(input, output, session) {
   output$download_MFI_bridge_mean_html <- downloadHandler(
       filename = "mean_MFI_bridge.html",
       content = function(file) {
-          date_as_number = as.numeric(str_remove_all(input$bridging_calendar,"-"))
           htmlwidgets::saveWidget(as_widget(
               ggplotly(mean_median_lineplots(loaded_files$Bridge_mm, input$log_linear)[["Mean"]])),file)
 
@@ -582,7 +573,6 @@ server <- function(input, output, session) {
   )
 
   output$Median_MFI_Bridging  <- renderPlotly({
-      date_as_number = as.numeric(str_remove_all(input$bridging_calendar,"-"))
       fix_jpeg_download(
       ggplotly(mean_median_lineplots(loaded_files$Bridge_mm,
                                           input$log_linear)[["Median"]]),"MFI_bridge_median")
@@ -591,7 +581,6 @@ server <- function(input, output, session) {
   output$download_MFI_bridge_median_html <- downloadHandler(
       filename = "median_MFI_bridge.html",
       content = function(file) {
-          date_as_number = as.numeric(str_remove_all(input$bridging_calendar,"-"))
           htmlwidgets::saveWidget(as_widget(
               ggplotly(mean_median_lineplots(loaded_files$Bridge_mm, input$log_linear)[["Median"]])),file)
 
