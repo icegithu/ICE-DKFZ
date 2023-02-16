@@ -48,11 +48,19 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
         
         # week <- 1 # debug
         
-        (current_path <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
-        (current_path <- current_path[grepl(to_read_in_weeks[week], current_path)])
+        # Delete old files to keep only one combo file per week per data type (sample/bridge)
+        old_files <- list.files(paste0(path_to_file, "/Combined_Output"), pattern = "Sample", full.names = T)
+        old_files <- old_files[grepl(to_read_in_weeks[week], old_files)]
+        
+        if (length(old_files) != 0) {
+            unlink(old_files, force = T)
+        }
+        
+        (current_path_samples <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
+        (current_path_samples <- current_path_samples[grepl(to_read_in_weeks[week], current_path_samples)])
         
         # TODO this regex pattern might need some more work
-        (Sample_plates_raw <- list.files(path = current_path, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
+        (Sample_plates_raw <- list.files(path = current_path_samples, pattern = "FM Platte .*\\D\\D\\D\\d\\d\\d.csv", recursive = T))
         
         if (length(Sample_plates_raw) == 0){ return()}
         
@@ -63,7 +71,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             
             # x <- Sample_plates_raw[1]
             
-            temp_sample_data <- read.csv(file = paste(current_path, x, sep="/"), 
+            temp_sample_data <- read.csv(file = paste(current_path_samples, x, sep="/"), 
                                          header = F, row.names = NULL, col.names = paste0("V",1:100))
             
             colnames_start <- which(grepl("Location", temp_sample_data$V1))[1]
@@ -99,7 +107,7 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             # Find the log file for the current plate: 
             plate_x <- gsub(".csv", "", gsub(".* ", "", x))
             
-            plate_x_log <- list.files(current_path, pattern = plate_x, recursive = T)
+            plate_x_log <- list.files(current_path_samples, pattern = plate_x, recursive = T)
             plate_x_log <- plate_x_log[grepl("Log_Messages", plate_x_log, ignore.case = T)]
             
             # add the date based on the log file
@@ -107,10 +115,10 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             
             # add the week number
             # med_count$Week <- gsub("Woche", "Week_", str_extract(x, "Woche\\d+"))
-            med_count$Week <- str_extract(current_path, "Woche\\d+")
+            med_count$Week <- str_extract(current_path_samples, "Woche\\d+")
             
             # read in the log file and add the delta T
-            plate_x_log_data <- readxl::read_xls(path = paste(current_path, plate_x_log, sep = "/"))
+            plate_x_log_data <- readxl::read_xls(path = paste(current_path_samples, plate_x_log, sep = "/"))
             delta_start <- which(grepl("Delta Calibration Temp", plate_x_log_data$Message, ignore.case = T))[1]
             delta_temp <- as.numeric(str_extract(gsub("Temp ", "", str_extract(plate_x_log_data$Message[delta_start], "Temp .*C \\(")), ".*\\d"))
             
@@ -138,6 +146,8 @@ read_in_sample_data <- function(path_to_file = path, Sample_info_file = Sample_i
             # Fix rownames
             rownames(Sample_df) <- NULL
         }
+        
+        dim(Sample_df)
         
         # Merge raw data with Sample info file using plate ID,  
         head(Sample_info_file)
@@ -211,6 +221,14 @@ read_in_bridging_data <- function(path_to_file = path, Bridge_info_file = Bridge
     for (week in seq_along(to_read_in_weeks)) {
         
         # week <- 1 # debug
+        
+        # Delete old files to keep only one combo file per week per data type (sample/bridge)
+        old_files <- list.files(paste0(path_to_file, "/Combined_Output"), pattern = "Bridging", full.names = T)
+        old_files <- old_files[grepl(to_read_in_weeks[week], old_files)]
+        
+        if (length(old_files) != 0) {
+            unlink(old_files, force = T)
+        }
         
         (current_path <- list.dirs(paste0(paste0(path_to_file, "/Rohdaten/"))))
         (current_path <- current_path[grepl(to_read_in_weeks[week], current_path)])
@@ -459,6 +477,7 @@ get_controls <- function(df){
 blank_lines <- function(df, selected_date = ""){
     
     # df <- bridge_controls # debug
+    # df <- sample_controls # debug
     # selected_date <- unique(df$Date)[1] #debug
     # head(df)
     
@@ -467,8 +486,8 @@ blank_lines <- function(df, selected_date = ""){
     
     plot <-
         ggplot(df, aes(x = Analyte, y = MFI, color = Plate.ID, label = Plate.number.intern)) + 
-        geom_line(linewidth = 1, aes(group = Plate.ID)) + 
-        geom_point() + 
+        geom_line(linewidth = 1, aes(group = Plate.ID), position = position_dodge(rel(0.5))) + 
+        geom_point(position = position_dodge(rel(0.5))) + 
         labs(color = "Plate.ID", x = "")
     
     return(fix_jpeg_download(ggplotly(plot), "blanks"))
@@ -503,10 +522,11 @@ blank_lines <- function(df, selected_date = ""){
 # Bridging and Sample data
 
 # draw the Delta-T point plots function
-delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
+delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data, selected_date = ""){
     
     # df1 <- sample_data #debug
     # df2 <- bridge_data #debug
+    # selected_date = unique(sort(c(sample_df_mm$Date, bridge_data$Date)))[1:3] #debug
     
     # Subset data
     delta_df1 <- df1 %>% 
@@ -523,7 +543,9 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
     delta_df2$Type <- "Bridging Plates"
     
     # Combine
-    combo_df <- rbind(delta_df1, delta_df2)
+    combo_df <- rbind(delta_df1, delta_df2) %>% 
+        filter(Date %in% selected_date) %>%
+        mutate(across(c(Date), factor))
     
     plot <-
         ggplot(combo_df, aes(x = Date, y = Delta.T, label = Plate.ID, color = Type)) +
@@ -537,14 +559,17 @@ delta_t_pointplot <- function(df1 = sample_data, df2 = bridge_data){
 
 # Figure 5 – Plate control line plots ==========================================
 
-plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, log_toggle = F){
+plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, log_toggle = F, selected_date = ""){
     
     # df1 <- bridge_controls #debug
     # df2 <- sample_controls # debug
+    # (selected_date <- unique(sort(c(bridge_controls$Date, sample_controls$Date)))[1:4])
     
     df <- rbind(df1, df2)
     
-    df <- df %>% filter(grepl("Plattenkontrolle", Sample.ID) & !grepl("Total.Events", Analyte, ignore.case = T)) %>%
+    df <- df %>% filter(grepl("Plattenkontrolle", Sample.ID) & 
+                            !grepl("Total.Events", Analyte, ignore.case = T)
+                        & Date %in% selected_date) %>%
         mutate(across(Plate.number.intern, factor)) %>%
         arrange(Plate.number.intern)
     
@@ -580,9 +605,10 @@ plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, lo
 # Figure 6 – Mean and Median MFI per plate Lineplots ===========================
 # get mean and median per plate function.
 
-get_mean_median_per_plate <- function(df, x_axis_selection){
+get_mean_median_per_plate <- function(df, x_axis_selection, selected_date = ""){
     
     # df <- sample_data #debug
+    # selected_date <- unique(sample_data$Date)
     # x_axis_selection <- "Date"
     # x_axis_selection <- "Week"
     # x_axis_selection <- "Plate.id"
@@ -593,7 +619,7 @@ get_mean_median_per_plate <- function(df, x_axis_selection){
     analyte_cols 
     
     final_df <- df %>% 
-        filter(Data.Type == "MFI") %>% 
+        filter(Data.Type == "MFI" & Date %in% selected_date) %>% 
         select(Plate.ID, Date, Week, Plate.daywise, Plate.number.intern, matches(analyte_cols)) %>%
         pivot_longer(cols = matches(analyte_cols), names_to = "Analyte", values_to = "MFI") %>%
         mutate(across(c(Date, Plate.daywise, Week), factor)) 
@@ -679,11 +705,12 @@ mm_per_plate_lineplots <- function(df, log_toggle = F){
 # Figure 7 – KT-3 Lineplots ====================================================
 
 # Draw the KT-3 pointplots function
-KT3_lineplot <- function(df, log_toggle = F){
+KT3_lineplot <- function(df, log_toggle = F, selected_date = ""){
     
-    # df <- bridge_controls # debug
+    # df <- bridge_controls #debug
+    # selected_date <- unique(bridge_controls$Date) #debug
     
-    df <- df %>% filter(Sample.ID == "KT3")# %>%
+    df <- df %>% filter(Sample.ID == "KT3" & Date %in% selected_date)# %>%
     head(df)
     
     plot <-
@@ -706,22 +733,26 @@ KT3_lineplot <- function(df, log_toggle = F){
     
 }    
 
-GST_bees <- function(df){
+
+GST_bees <- function(df, selected_date = ""){
     
-    # df <- sample_data # debug
-    # df <- bridge_data
+    # selected_date <- unique(sort(c(bridge_data$Date, sample_data$Date))) #debug
+    # df <- sample_data #debug
+    # df <- bridge_data #debug
+    
     df <-
-        df %>% filter(Data.Type == "MFI") %>% 
+        df %>% filter(Data.Type == "MFI" & Date %in% selected_date & Sample.ID != "KT3") %>% 
         mutate(across(c(Plate.ID, Plate.daywise, Date), factor))
     
     # head(df)
-    df_median <- df %>% group_by(Date) %>%
+    df_median <- 
+        df %>% group_by(Date) %>%
         summarise(GST.tag = median(GST.tag, na.rm = T))
     
     plot <-
         ggplot(df, aes(x = Date, y = GST.tag)) + 
-        geom_beeswarm(cex = rel(0.5), aes(color = Plate.daywise, alpha=.5,
-                                          text = paste("Plate.ID", Plate.ID), label = Well)) +
+        geom_beeswarm(cex = rel(0.5), alpha = 0.7,
+                      aes(color = Plate.daywise, text = paste("Plate.ID:", Plate.ID, "\nSample.ID:", Sample.ID), label = Well)) +
         geom_crossbar(data = df_median, size = rel(0.4), aes(ymin = GST.tag, ymax = GST.tag), 
                       show.legend = F, color = "black", width = rel(0.5)) + 
         # stat_summary(fun = mean, geom = "crossbar", width = 0.5, color = "black") # this would be so much better but ggplotly doesn't like it :'( 
@@ -734,7 +765,7 @@ GST_bees <- function(df){
 get_all_available_days <-function(summary_dir){
     # Gets all days in between the filenames in the summary folder
     # the dates are returned in a vector to be used with the calendar input
-    # 
+    
     # All dates are grabbed independetly if they contain only summary or only 
     # bridge data 
     

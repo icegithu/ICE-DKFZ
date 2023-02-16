@@ -16,6 +16,7 @@ library("plotly")
 
 # Path to the input data for
 path <- "C:/DKFZ Project Amuse/Test CKB/"
+path <- "C:/DKFZ Project Amuse/Test2/"
 # setwd(path)
 # list.files(recursive = T)
 
@@ -39,7 +40,7 @@ read_in_bridging_data(path_to_file = path, Bridge_info_file = Bridge_info_file)
 # Read in sample data for plotting
 list.files(paste0(path,"Combined_Output"))
 (selected_samples_files <- list.files(path = paste0(path,"Combined_Output"), pattern = "Sample", full.names = T))
-selected_samples_files <- selected_samples_files[2] # for now for better compatibility with dummy data
+# selected_samples_files <- selected_samples_files[1] # for now for better compatibility with dummy data
 
 # Read in and bind rows
 sample_data <- selected_samples_files %>% 
@@ -49,7 +50,7 @@ sample_data <- selected_samples_files %>%
 # Read in bridging data for plotting
 list.files(paste0(path,"Combined_Output"))
 (selected_bridge_files <- list.files(path = paste0(path,"Combined_Output"), pattern = "Bridging", full.names = T))
-selected_bridge_files <- selected_bridge_files[2] # for now for better compatibility with dummy data
+# selected_bridge_files <- selected_bridge_files[1] # for now for better compatibility with dummy data
 
 bridge_data <- selected_bridge_files %>% 
     lapply(read_csv) %>% 
@@ -86,12 +87,14 @@ sample_controls <- get_controls(sample_data)
 bridge_controls <- get_controls(bridge_data)
 
 # Bridging and Sample data
+selected_date <- unique(sample_df_mm$Date)[1:4]
 (selected_date <- as.character(unique(bridge_controls$Date)[1:3]))
 blank_lines(bridge_controls, selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Bridging_lines.jpg", scale = 2.5)
 
+selected_date <- unique(sample_df_mm$Date)[1:4]
 (selected_date <- as.character(unique(sample_controls$Date)[1:4]))
-blank_bees(sample_controls, selected_date)
+blank_lines(sample_controls, selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_3_Sample_bees.jpg", scale = 2.5)
 
 # blank_violins(sample_controls)
@@ -99,15 +102,17 @@ blank_bees(sample_controls, selected_date)
 
 # Figure 4 – Delta-T Dotplots ==================================================
 # Bridging and Sample data
-delta_t_pointplot(df1 = sample_data, df2 = bridge_data) 
-# %>% remove_parenthesis_legend()
+
+(selected_date <- unique(sort(c(sample_df_mm$Date, bridge_data$Date)))[1:4])
+delta_t_pointplot(df1 = sample_data, df2 = bridge_data, selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_4_Bridging_and_sample.jpg", scale = 2.5)
 
 # Figure 5 – Plate control line plots ==========================================
 # Bridging and Sample data
 
 log_toggle <- T
-all_controls <- plate_control_plots(bridge_controls, sample_controls, log_toggle)
+(selected_date <- unique(sort(c(bridge_controls$Date, sample_controls$Date)))[1])
+all_controls <- plate_control_plots(bridge_controls, sample_controls, log_toggle, selected_date)
 # do.call(cowplot::plot_grid, c(plate_control_plots, ncol = 1, align = "hv"))
 all_controls[[1]] %>% ggplotly()
 all_controls[[2]] %>% ggplotly()
@@ -121,20 +126,24 @@ x_axis_selection <- "Date"
 x_axis_selection <- "Week"
 x_axis_selection <- "Plate.id"
 
-sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data, x_axis_selection)
+selected_date <- unique(sample_data$Date)
+sample_df_mm_per_plate <- get_mean_median_per_plate(sample_data, x_axis_selection, selected_date)
+unique(sample_df_mm_per_plate$X_axis)
 
 log_toggle <- T
-
 Sample_MM_per_plate <- mm_per_plate_lineplots(sample_df_mm_per_plate, log_toggle)
 Sample_MM_per_plate[[1]] %>% ggplotly()
+Sample_MM_per_plate[[2]] %>% ggplotly()
 # do.call(cowplot::plot_grid, c(Sample_MM_per_plate, ncol = 1, align = "hv"))
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_6_Sample_mm.jpg", scale = 2.5)
 
 # Figure 7 – KT-3 dotplots =====================================================
 # Bridging data only
 
+selected_date <- unique(bridge_controls$Date)[4:2]
 log_toggle <- T
-KT3_lineplot(bridge_controls, log_toggle)
+
+KT3_lineplot(bridge_controls, log_toggle, selected_date)
 
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_7_Bridging_KT-3.jpg", scale = 2.5)
 
@@ -142,11 +151,12 @@ KT3_lineplot(bridge_controls, log_toggle)
 
 # Bridging data
 # TODO Filtering is only for now, because of bad dummy data
+(selected_date <- unique(sort(c(bridge_data$Date, sample_data$Date)))[1:5])
+
 bridge_data %>% 
-    filter(GST.tag < 750) %>% 
-    GST_bees()
+    GST_bees(selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Bridging_Bees.jpg", scale = 2.5)
 
 # Sample data
-GST_bees(sample_data)
+GST_bees(sample_data, selected_date)
 # ggsave("C:/Users/GK/Desktop/dkfz/Figure_8_Sample_violins.jpg", scale = 2.5)
