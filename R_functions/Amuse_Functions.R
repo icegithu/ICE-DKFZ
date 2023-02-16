@@ -830,4 +830,7 @@ css_style <- ".shiny-notification {
                 }
                 .-selected- .dp-note {
                     opacity: 0;
+                }
+                .nav-tabs>li.active>a, .nav-tabs>li.active>a:hover, .nav-tabs>li.active>a:focus {
+                    background-color: skyblue;
                 }"

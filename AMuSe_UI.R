@@ -38,7 +38,7 @@ ui <- fluidPage(
   theme = shinytheme("superhero"),
   
   titlePanel("AMuSe"),
-  tags$head(tags$style(css_style)),
+  tags$head(tags$style(HTML(css_style))),
   tabsetPanel(id= "TabPanel",type = "tabs",
               tabPanel("Load Files",
                        tags$div(tags$br(),tags$br()),
