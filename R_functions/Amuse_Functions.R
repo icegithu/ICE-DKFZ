@@ -564,7 +564,7 @@ plate_control_plots <- function(df1 = bridge_controls, df2 = sample_controls, lo
                                 color = Analyte, label = Date, text = paste("Plate # intern.", Plate.number.intern))) +
             geom_line(linewidth = 1, aes(group = Analyte)) + geom_point() + 
             scale_x_discrete(expand = expansion(mult = c(0.05, 0.05))) +
-            labs(x = "Plate No.", y = "MFI", title = unique(temp_df$Sample.ID)) 
+            labs(x = "", y = "MFI", title = unique(temp_df$Sample.ID)) 
         
         if (log_toggle) {
             
